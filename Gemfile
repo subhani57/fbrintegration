@@ -2,133 +2,75 @@ source "https://rubygems.org"
 
 ruby "3.4.7"
 
-gem 'httparty'           # For API calls
-gem 'jwt'                # For token handling
-gem 'sidekiq'            # Background jobs
-gem 'redis-rails'        # Redis for caching and Sidekiq
-gem 'aasm'               # State machine for invoice status
-gem 'wicked_pdf'         # PDF generation
-gem 'rqrcode'            # QR code generation
-gem 'figaro'             # Environment variables
-gem 'prawn'              # Alternative PDF generation
-gem 'pundit'             # Authorization
-gem 'prawn-table'
-gem "barby"
-gem "chunky_png"
-gem 'zbar'
-
-# Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.1.2"
-
-# The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
-
-# Use postgresql as the database for Active Record
 gem "pg", "~> 1.1"
-
-# Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
-
-# Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
-
-# Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
 gem "turbo-rails"
-
-# Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
-
-# Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
-
-# Use Redis adapter to run Action Cable in production
-# gem "redis", ">= 4.0.1"
-
-# Use Kredis to get higher-level data types in Redis [https://github.com/rails/kredis]
-# gem "kredis"
-
-# Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
-# gem "bcrypt", "~> 3.1.7"
-
-# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem "tzinfo-data", platforms: %i[ windows jruby ]
-
-# Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
+gem "tzinfo-data", platforms: %i[windows jruby]
 
-# Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-# gem "image_processing", "~> 1.2"
-
-group :development, :test do
-  # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
-  gem "debug", platforms: %i[ mri windows ]
-end
-
-group :development do
-  # Use console on exceptions pages [https://github.com/rails/web-console]
-  gem "web-console"
-
-  # Add speed badges [https://github.com/MiniProfiler/rack-mini-profiler]
-  # gem "rack-mini-profiler"
-
-  # Speed up commands on slow machines / big apps [https://github.com/rails/spring]
-  # gem "spring"
-end
-
-group :test do
-  # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
-  gem "capybara"
-  gem "selenium-webdriver"
-end
-
-gem "rspec-rails", "~> 7.1"
 # UI & Frontend
-gem 'devise'
-gem 'haml-rails'
-gem 'bootstrap', '~> 5.3'
-gem 'font-awesome-sass'
-gem 'jquery-rails'
-gem 'simple_form'
+gem "devise"
+gem "haml-rails"
+gem "bootstrap", "~> 5.3"
+gem "font-awesome-sass"
+gem "jquery-rails"
+gem "simple_form"
+gem "sassc-rails", "~> 2.1"
 
 # FBR Integration
-gem 'faraday'
-gem 'faraday-retry'
-gem 'jwt'
-gem 'prawn'
-gem 'wicked_pdf'
+gem "httparty"
+gem "faraday"
+gem "faraday-retry"
+gem "jwt"
+gem "prawn"
+gem "prawn-table"
+gem "wicked_pdf"
+gem "rqrcode"
+gem "barby"
+gem "chunky_png"
+gem "figaro"
 
 # Background Jobs
-gem 'sidekiq'
-gem 'sidekiq-scheduler'
-gem 'redis-rails'
+gem "sidekiq"
+gem "sidekiq-scheduler"
+gem "redis-rails"
 
 # File Upload
 gem "carrierwave", "~> 3.0"
-gem 'mini_magick'
+gem "mini_magick"
 
 # Utilities
-gem 'aasm'           # State machine
-gem 'pundit'         # Authorization
-gem 'kaminari'       # Pagination
-gem 'chartkick'      # Charts
-gem 'groupdate'      # Date grouping
-gem 'whenever', require: false  # Cron jobs
+gem "aasm"
+gem "pundit"
+gem "kaminari"
+gem "chartkick"
+gem "groupdate"
+gem "whenever", require: false
 
-# Development
-gem 'dotenv-rails', groups: [:development, :test]
-gem 'pry-rails'
-gem 'better_errors'
-gem 'binding_of_caller'
-gem 'annotate'
+group :development, :test do
+  gem "debug", platforms: %i[mri windows]
+  gem "dotenv-rails"
+  gem "pry-rails"
+  gem "rspec-rails", "~> 7.1"
+  gem "factory_bot_rails"
+  gem "faker"
+  gem "webmock"
+  gem "vcr"
+end
 
-# Testing
-gem 'factory_bot_rails'
-gem 'faker'
-gem 'webmock'
-gem 'vcr'
+group :development do
+  gem "web-console"
+  gem "better_errors"
+  gem "binding_of_caller"
+  gem "annotate"
+end
 
-gem "cssbundling-rails", "~> 1.4"
-
-gem "sassc-rails", "~> 2.1"
-
-gem "jsbundling-rails", "~> 1.3"
+group :test do
+  gem "capybara"
+  gem "selenium-webdriver"
+end
