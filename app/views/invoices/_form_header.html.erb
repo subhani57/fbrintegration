@@ -1,0 +1,34 @@
+<% title = local_assigns[:title] || (@invoice.persisted? ? 'Edit Invoice' : 'Create New Invoice') %>
+<% subtitle = local_assigns[:subtitle] || (@invoice.persisted? ? "Update invoice #{@invoice.invoice_number}" : 'Fill in buyer details and line items, then save to submit to FBR later.') %>
+
+<div class="invoice-form-hero">
+  <div class="invoice-form-hero__content">
+    <div class="invoice-form-hero__icon">
+      <i class="fas fa-file-invoice-dollar"></i>
+    </div>
+    <div>
+      <h1 class="invoice-form-hero__title"><%= title %></h1>
+      <p class="invoice-form-hero__subtitle"><%= subtitle %></p>
+    </div>
+  </div>
+  <%= link_to (local_assigns[:back_path] || invoices_path), class: 'btn btn-light btn-sm invoice-form-hero__back' do %>
+    <i class="fas fa-arrow-left"></i> <%= local_assigns[:back_label] || 'Back to Invoices' %>
+  <% end %>
+</div>
+
+<div class="invoice-form-steps" aria-hidden="true">
+  <div class="invoice-form-step invoice-form-step--active">
+    <span class="invoice-form-step__num">1</span>
+    <span class="invoice-form-step__label">Invoice</span>
+  </div>
+  <div class="invoice-form-step__line"></div>
+  <div class="invoice-form-step invoice-form-step--active">
+    <span class="invoice-form-step__num">2</span>
+    <span class="invoice-form-step__label">Buyer</span>
+  </div>
+  <div class="invoice-form-step__line"></div>
+  <div class="invoice-form-step invoice-form-step--active">
+    <span class="invoice-form-step__num">3</span>
+    <span class="invoice-form-step__label">Items</span>
+  </div>
+</div>

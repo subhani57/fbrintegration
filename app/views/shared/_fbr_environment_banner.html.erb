@@ -1,0 +1,20 @@
+<% if user_signed_in? && current_user.taxpayer? %>
+  <% if production_fbr_active? %>
+    <div class="alert alert-danger alert-dismissible fade show mx-3 mt-3 mb-0" role="alert">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Production mode active.</strong>
+      Validate and submit actions use the live FBR Production API.
+      <% if (reason = fbr_submission_blocked_reason).present? %>
+        <span class="d-block mt-1"><%= reason %></span>
+      <% end %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% elsif (reason = fbr_submission_blocked_reason).present? %>
+    <div class="alert alert-warning alert-dismissible fade show mx-3 mt-3 mb-0" role="alert">
+      <i class="fas fa-info-circle me-2"></i>
+      <%= reason %>
+      <%= link_to 'Open Settings', profile_path, class: 'alert-link ms-1' %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% end %>
+<% end %>

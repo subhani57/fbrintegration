@@ -1,0 +1,96 @@
+<div class="mb-4">
+  <%= link_to admin_users_path, class: 'btn btn-sm btn-outline-secondary mb-3' do %>
+    <i class="fas fa-arrow-left"></i> Back to Users
+  <% end %>
+  <h1 class="fbr-page-header mb-1"><i class="fas fa-user-plus text-primary"></i> New User</h1>
+  <p class="text-muted mb-0">Create a taxpayer or viewer account. A temporary password is generated automatically.</p>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <%= form_with model: [:admin, @user], local: true do |f| %>
+      <% if @user.errors.any? %>
+        <div class="alert alert-danger mb-4">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <strong>Could not create user:</strong>
+          <ul class="mb-0 mt-2">
+            <% @user.errors.full_messages.each do |msg| %>
+              <li><%= msg %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="fas fa-id-card text-primary me-2"></i> Account
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <%= f.label :email, class: 'form-label' %>
+            <%= f.email_field :email, class: 'form-control', autofocus: true, placeholder: 'user@company.com', required: true %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :role, class: 'form-label' %>
+            <%= f.select :role,
+                (User::ROLES - ['admin']).map { |r| [r.humanize, r] },
+                {},
+                class: 'form-select' %>
+            <div class="form-text">
+              <strong>Taxpayer</strong> — create and submit invoices.
+              <strong>Viewer</strong> — read-only access to invoices and reports.
+            </div>
+          </div>
+
+          <div class="form-check">
+            <%= f.check_box :approved, class: 'form-check-input' %>
+            <%= f.label :approved, 'Approve account immediately (user can sign in without waiting)', class: 'form-check-label' %>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <i class="fas fa-building text-primary me-2"></i> Business profile
+          <span class="text-muted fw-normal small ms-1">(optional — can be completed later)</span>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <%= f.label :ntn_cnic, 'NTN / CNIC', class: 'form-label' %>
+            <%= f.text_field :ntn_cnic, class: 'form-control', placeholder: '1234567-8' %>
+          </div>
+
+          <div class="mb-3">
+            <%= f.label :business_name, class: 'form-label' %>
+            <%= f.text_field :business_name, class: 'form-control', placeholder: 'Company name' %>
+          </div>
+
+          <div class="mb-0">
+            <%= f.label :address, class: 'form-label' %>
+            <%= f.text_area :address, class: 'form-control', rows: 3, placeholder: 'Business address' %>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <%= f.submit 'Create User', class: 'btn btn-primary' %>
+        <%= link_to 'Cancel', admin_users_path, class: 'btn btn-outline-secondary' %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-primary">
+      <div class="card-body">
+        <h6 class="card-title text-primary mb-3"><i class="fas fa-info-circle"></i> After creation</h6>
+        <ul class="small text-muted mb-0 ps-3">
+          <li class="mb-2">A secure temporary password is generated and shown once — copy it before leaving the page.</li>
+          <li class="mb-2">Share the password securely and ask the user to change it after first sign-in.</li>
+          <li class="mb-2">Taxpayers need FBR tokens configured before they can submit invoices.</li>
+          <li>Unapproved accounts are redirected to a pending-approval screen on login.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

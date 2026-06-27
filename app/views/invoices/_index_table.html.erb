@@ -1,0 +1,81 @@
+<div class="card">
+  <% if bulk_select %>
+    <div class="card-header bg-white d-flex justify-content-end py-2">
+      <button type="submit" class="btn btn-sm btn-success" data-turbo-confirm="Submit selected invoices to FBR?">
+        <i class="fas fa-paper-plane"></i> Submit selected
+      </button>
+    </div>
+  <% end %>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm fbr-invoice-table mb-0">
+        <thead>
+          <tr>
+            <% if bulk_select %><th style="width:3%"></th><% end %>
+            <th style="width: 11%">Invoice #</th>
+            <th style="width: 9%">Date</th>
+            <th style="width: 22%">Buyer</th>
+            <th style="width: 11%">Amount</th>
+            <th style="width: 10%">Status</th>
+            <th style="width: 12%">FBR Status</th>
+            <th class="fbr-invoice-table__actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% invoices.each do |invoice| %>
+            <tr>
+              <% if bulk_select %>
+                <td>
+                  <% if invoice.draft? || invoice.validated? || invoice.failed? %>
+                    <%= check_box_tag 'invoice_ids[]', invoice.id, false, id: "invoice_#{invoice.id}" %>
+                  <% end %>
+                </td>
+              <% end %>
+              <td class="text-nowrap"><%= invoice.invoice_number %></td>
+              <td class="text-nowrap"><%= invoice.invoice_date.strftime('%Y-%m-%d') %></td>
+              <td class="fbr-invoice-table__buyer" title="<%= invoice.buyer_name %>"><%= invoice.buyer_name %></td>
+              <td class="text-nowrap"><%= format_pkr(invoice.total_amount) %></td>
+              <td>
+                <span class="badge bg-<%= status_badge_color(invoice.status) %>">
+                  <%= invoice.status&.humanize || 'Draft' %>
+                </span>
+              </td>
+              <td>
+                <% if invoice.fbr_invoice_id %>
+                  <span class="badge bg-success"><i class="fas fa-check"></i> Submitted</span>
+                <% else %>
+                  <span class="badge bg-secondary">Not Submitted</span>
+                <% end %>
+              </td>
+              <td class="fbr-invoice-table__actions">
+                <div class="d-flex align-items-center gap-1">
+                  <%= link_to invoice_path(invoice), class: 'btn btn-outline-primary btn-sm', aria: { label: 'View invoice' } do %>
+                    <i class="fas fa-eye"></i>
+                  <% end %>
+                  <% if invoice_fbr_submitted?(invoice) %>
+                    <%= link_to download_pdf_invoice_path(invoice), class: 'btn-download-sm', aria: { label: 'Download PDF' } do %>
+                      <i class="fas fa-download"></i>
+                    <% end %>
+                  <% elsif current_user.can_manage_invoices? %>
+                    <%= link_to edit_invoice_path(invoice), class: 'btn btn-outline-secondary btn-sm', aria: { label: 'Edit invoice' } do %>
+                      <i class="fas fa-edit"></i>
+                    <% end %>
+                    <% if invoice.draft? || invoice.validated? %>
+                      <%= button_to submit_invoice_path(invoice), method: :post, class: 'btn btn-outline-success btn-sm',
+                          aria: { label: 'Submit to FBR' }, form: { data: { turbo_confirm: 'Submit to FBR?' }, class: 'd-inline' } do %>
+                        <i class="fas fa-paper-plane"></i>
+                      <% end %>
+                    <% end %>
+                  <% end %>
+                </div>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% if invoices.respond_to?(:total_count) %>
+    <%= render 'shared/pagination_footer', collection: invoices, form_path: invoices_path, per_options: [25, 50, 100], item_label: 'invoices' %>
+  <% end %>
+</div>

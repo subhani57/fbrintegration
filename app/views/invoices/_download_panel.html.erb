@@ -1,0 +1,71 @@
+<div class="invoice-download-panel">
+  <div class="invoice-download-panel__header">
+    <div class="invoice-download-panel__icon">
+      <i class="fas fa-file-pdf"></i>
+    </div>
+    <div>
+      <div class="invoice-download-panel__title">Your invoice is ready</div>
+      <p class="invoice-download-panel__subtitle">
+        FBR-approved document with your business branding
+      </p>
+    </div>
+  </div>
+
+  <div class="invoice-download-panel__body">
+    <% if invoice.fbr_invoice_id.present? %>
+      <div class="invoice-download-panel__fbr-id">
+        <label>FBR Invoice Number</label>
+        <code><%= invoice.fbr_invoice_id %></code>
+      </div>
+    <% end %>
+
+    <div class="invoice-download-actions">
+      <%= link_to download_pdf_fbr_invoice_path(invoice), class: 'btn-download-primary' do %>
+        <i class="fas fa-download fa-lg"></i>
+        <span>
+          Download FBR PDF
+          <small class="d-block opacity-75 fw-normal" style="font-size: 0.75rem;">IRIS registered invoice</small>
+        </span>
+      <% end %>
+
+      <%= link_to fbr_invoice_path(invoice), class: 'btn-download-secondary' do %>
+        <i class="fas fa-cloud fa-lg"></i>
+        <span>
+          FBR details
+          <small class="d-block fw-normal text-muted" style="font-size: 0.75rem;">Sync &amp; view on IRIS</small>
+        </span>
+      <% end %>
+
+      <%= link_to invoice_path(invoice, format: :pdf),
+          class: 'btn-download-secondary',
+          target: '_blank',
+          rel: 'noopener' do %>
+        <i class="fas fa-eye fa-lg"></i>
+        <span>
+          Preview PDF
+          <small class="d-block fw-normal text-muted" style="font-size: 0.75rem;">Open in new tab</small>
+        </span>
+      <% end %>
+    </div>
+
+    <% if user.company_logo.present? %>
+      <div class="invoice-download-panel__logo-hint">
+        <%= image_tag user.company_logo.thumb.url, alt: 'Your logo' %>
+        <span><i class="fas fa-check-circle text-success me-1"></i> Your company logo will appear on the PDF header.</span>
+      </div>
+    <% else %>
+      <div class="invoice-download-panel__logo-hint">
+        <i class="fas fa-image text-muted fa-lg"></i>
+        <span>
+          No logo yet.
+          <% if user.taxpayer? %>
+            <%= link_to 'Add one in your profile', edit_profile_path, class: 'fw-semibold text-decoration-none' %>
+          <% else %>
+            Upload a logo in your business profile
+          <% end %>
+          to personalize your invoices.
+        </span>
+      </div>
+    <% end %>
+  </div>
+</div>

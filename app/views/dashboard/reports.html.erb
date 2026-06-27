@@ -1,0 +1,167 @@
+<div class="container-fluid reports-page">
+  <div class="fbr-page-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-0"><i class="fas fa-chart-bar text-primary"></i> Reports</h1>
+      <p class="text-muted mb-0">
+        <%= @start_date.strftime('%d %b %Y') %> — <%= @end_date.strftime('%d %b %Y') %>
+      </p>
+    </div>
+    <%= link_to dashboard_path, class: 'btn btn-outline-secondary btn-sm' do %>
+      <i class="fas fa-arrow-left"></i> Dashboard
+    <% end %>
+  </div>
+
+  <%= form_with url: reports_path, method: :get, local: true, class: 'card mb-4' do |f| %>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <%= f.label :start_date, 'From date', class: 'form-label' %>
+          <%= f.date_field :start_date, value: @start_date, class: 'form-control' %>
+        </div>
+        <div class="col-md-3">
+          <%= f.label :end_date, 'To date', class: 'form-label' %>
+          <%= f.date_field :end_date, value: @end_date, class: 'form-control' %>
+        </div>
+        <div class="col-md-3">
+          <%= f.submit 'Apply filter', class: 'btn btn-primary w-100' %>
+        </div>
+        <div class="col-md-3">
+          <%= link_to 'Export CSV', reports_path(format: :csv, start_date: @start_date, end_date: @end_date), class: 'btn btn-outline-success w-100' %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4 col-lg-2">
+      <div class="card fbr-stat-card h-100"><div class="card-body py-3">
+        <small class="text-muted">Invoices</small>
+        <div class="h4 mb-0 text-primary"><%= @summary[:total_invoices] %></div>
+      </div></div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <div class="card fbr-stat-card h-100"><div class="card-body py-3">
+        <small class="text-muted">Net amount</small>
+        <div class="h6 mb-0"><%= format_pkr(@summary[:net_amount]) %></div>
+      </div></div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <div class="card fbr-stat-card h-100"><div class="card-body py-3">
+        <small class="text-muted">Total (incl. tax)</small>
+        <div class="h6 mb-0"><%= format_pkr(@summary[:total_amount]) %></div>
+      </div></div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <div class="card fbr-stat-card h-100"><div class="card-body py-3">
+        <small class="text-muted">Sales tax</small>
+        <div class="h6 mb-0"><%= format_pkr(@summary[:total_tax]) %></div>
+      </div></div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <div class="card fbr-stat-card h-100"><div class="card-body py-3">
+        <small class="text-muted">FBR submitted</small>
+        <div class="h4 mb-0 text-success"><%= @summary[:fbr_submitted] %></div>
+      </div></div>
+    </div>
+    <div class="col-md-4 col-lg-2">
+      <div class="card fbr-stat-card h-100"><div class="card-body py-3">
+        <small class="text-muted">Draft / Failed</small>
+        <div class="h6 mb-0"><%= @summary[:draft] %> / <span class="text-danger"><%= @summary[:failed] %></span></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-semibold">Daily totals</div>
+        <div class="card-body p-0">
+          <% if @daily_summary.any? %>
+            <div class="table-responsive" style="max-height: 360px;">
+              <table class="table table-hover mb-0">
+                <thead><tr><th>Date</th><th class="text-end">Amount (Rs.)</th></tr></thead>
+                <tbody>
+                  <% @daily_summary.each do |date, total| %>
+                    <tr>
+                      <td><%= date.is_a?(Date) ? date.strftime('%d %b %Y') : date %></td>
+                      <td class="text-end"><%= format_pkr(total) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-muted p-4 mb-0">No invoices in this date range.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-white fw-semibold">Top buyers</div>
+        <div class="card-body p-0">
+          <% if @customer_summary.any? %>
+            <div class="table-responsive" style="max-height: 360px;">
+              <table class="table table-hover mb-0">
+                <thead><tr><th>Buyer</th><th class="text-end">Total (Rs.)</th></tr></thead>
+                <tbody>
+                  <% @customer_summary.each do |name, total| %>
+                    <tr>
+                      <td><%= name.presence || 'Unknown' %></td>
+                      <td class="text-end"><%= format_pkr(total) %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-muted p-4 mb-0">No buyer data in this date range.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% if @invoices.any? %>
+    <div class="card mt-4">
+      <div class="card-header bg-white fw-semibold">All invoices in period</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Buyer</th>
+                <th class="text-end">Tax</th>
+                <th class="text-end">Total</th>
+                <th>Status</th>
+                <th>FBR</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @invoices.each do |inv| %>
+                <tr>
+                  <td><%= link_to inv.invoice_number, invoice_path(inv) %></td>
+                  <td><%= inv.invoice_date.strftime('%d %b %Y') %></td>
+                  <td><%= inv.buyer_name.presence || '—' %></td>
+                  <td class="text-end"><%= format_pkr(inv.tax_amount) %></td>
+                  <td class="text-end fw-semibold"><%= format_pkr(inv.total_amount) %></td>
+                  <td><%= render 'shared/status_badge', status: inv.status %></td>
+                  <td>
+                    <% if inv.fbr_invoice_id.present? %>
+                      <span class="badge bg-success">Submitted</span>
+                    <% else %>
+                      <span class="badge bg-secondary">—</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

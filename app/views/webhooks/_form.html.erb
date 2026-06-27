@@ -1,0 +1,6 @@
+<%= form_with model: @webhook, local: true do |f| %>
+  <div class="mb-3"><%= f.label :url %><%= f.url_field :url, class: 'form-control', required: true %></div>
+  <div class="mb-3"><%= f.label :secret %><%= f.text_field :secret, class: 'form-control' %></div>
+  <div class="mb-3"><%= f.check_box :active %> <%= f.label :active, 'Active' %></div>
+  <%= f.submit 'Save', class: 'btn btn-primary' %>
+<% end %>

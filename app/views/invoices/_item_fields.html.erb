@@ -1,0 +1,98 @@
+<div class="invoice-form-item invoice-item" data-item-index="<%= f.object&.id || 'new' %>">
+  <div class="invoice-form-item__header">
+    <div class="invoice-form-item__title">
+      <span class="invoice-form-item__badge item-number">1</span>
+      <span class="invoice-form-item__label">Line item</span>
+    </div>
+    <div class="invoice-form-item__actions">
+      <% if f.object&.persisted? %>
+        <label class="invoice-form-item__remove-check">
+          <%= f.check_box :_destroy, class: 'form-check-input' %>
+          <span>Remove</span>
+        </label>
+      <% else %>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="invoice-form-item__body">
+    <div class="invoice-form-field-group">
+      <p class="invoice-form-field-group__label"><i class="fas fa-box"></i> Product</p>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <%= f.input :description, label: 'Product description',
+              input_html: { class: 'form-control', required: true, placeholder: 'e.g. Wooden plates' },
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <div class="col-md-6">
+          <%= render "invoices/hs_code_field", f: f %>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-form-field-group">
+      <p class="invoice-form-field-group__label"><i class="fas fa-calculator"></i> Quantity &amp; pricing</p>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <%= f.input :quantity, label: 'Quantity',
+              input_html: { class: 'form-control item-quantity', type: 'number', step: '0.01', min: '0', required: true, placeholder: '0' },
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <div class="col-md-3">
+          <%= f.input :uom, label: 'Unit of measure',
+              input_html: { class: 'form-control uom-select', data: { value: f.object.uom } },
+              collection: [],
+              include_blank: 'Select UOM',
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <div class="col-md-3">
+          <%= f.input :unit_price, label: 'Unit price (Rs.)',
+              input_html: { class: 'form-control item-unit-price', type: 'number', step: '0.01', min: '0', required: true, placeholder: '0.00' },
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <div class="col-md-3">
+          <%= f.input :total_value, label: 'Line total (excl. tax)',
+              input_html: { class: 'form-control item-total-price bg-light', type: 'number', step: '0.01', readonly: true },
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="invoice-form-field-group invoice-form-field-group--last">
+      <p class="invoice-form-field-group__label"><i class="fas fa-percent"></i> Tax &amp; FBR fields</p>
+      <div class="row g-3">
+        <div class="col-md-3">
+          <%= f.input :tax_rate, label: 'Tax rate (%)',
+              input_html: { class: 'form-control item-tax-rate', type: 'number', step: '0.01', min: '0', max: '100', value: f.object.tax_rate.presence || InvoiceItem::DEFAULT_TAX_RATE },
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <div class="col-md-3">
+          <%= f.input :sales_tax, label: 'Sales tax (Rs.)',
+              input_html: { class: 'form-control item-tax-amount bg-light', type: 'number', step: '0.01', readonly: true },
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <div class="col-md-6">
+          <%= f.input :sale_type, label: 'Sale type',
+              input_html: { class: 'form-control sale-type-select' },
+              collection: [
+                ['Goods at standard rate (default)', 'Goods at standard rate (default)'],
+                ['Goods at Reduced Rate', 'Goods at Reduced Rate'],
+                ['Exempt Goods', 'Exempt Goods'],
+                ['Goods at zero-rate', 'Goods at zero-rate'],
+                ['3rd Schedule Goods', '3rd Schedule Goods'],
+                ['Services', 'Services']
+              ],
+              selected: f.object.sale_type.presence || InvoiceItem::DEFAULT_SALE_TYPE,
+              include_blank: false,
+              wrapper_html: { class: 'mb-0' } %>
+        </div>
+        <%= f.hidden_field :sro_schedule_no %>
+      </div>
+    </div>
+  </div>
+
+  <%= f.hidden_field :id if f.object&.persisted? %>
+</div>

@@ -1,0 +1,92 @@
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1 class="fbr-page-header mb-1">Invoice <%= @invoice.invoice_number %></h1>
+    <p class="text-muted mb-0">
+      Taxpayer: <%= link_to @invoice.user.email, admin_user_path(@invoice.user) if @invoice.user %>
+      · <%= @invoice.invoice_date %>
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <% if @invoice.fbr_invoice_id.present? %>
+      <%= link_to download_pdf_admin_invoice_path(@invoice), class: 'btn btn-success' do %>
+        <i class="fas fa-download"></i> Download PDF
+      <% end %>
+    <% end %>
+    <%= link_to admin_invoices_path, class: 'btn btn-outline-secondary' do %>
+      <i class="fas fa-arrow-left"></i> Back
+    <% end %>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-8">
+    <div class="card mb-4">
+      <div class="card-header"><strong>Buyer</strong></div>
+      <div class="card-body">
+        <p class="mb-1"><strong><%= @invoice.buyer_name %></strong></p>
+        <p class="mb-1 text-muted">NTN: <%= @invoice.buyer_ntn %></p>
+        <p class="mb-0 text-muted"><%= @invoice.buyer_address %>, <%= @invoice.buyer_province %></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><strong>Line Items</strong></div>
+      <div class="card-body p-0">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>HS Code</th>
+              <th>Qty</th>
+              <th class="text-end">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @invoice.items.each do |item| %>
+              <tr>
+                <td><%= item.description %></td>
+                <td><%= item.hs_code %></td>
+                <td><%= item.quantity %> <%= item.uom %></td>
+                <td class="text-end"><%= number_to_currency(item.total_value || (item.quantity.to_f * item.unit_price.to_f), unit: 'Rs. ') %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-header"><strong>Status</strong></div>
+      <div class="card-body">
+        <p class="mb-2">Workflow: <span class="badge bg-secondary"><%= @invoice.status %></span></p>
+        <p class="mb-2">FBR: <span class="badge bg-<%= @invoice.fbr_invoice_id.present? ? 'success' : 'secondary' %>"><%= @invoice.fbr_status || 'pending' %></span></p>
+        <% if @invoice.fbr_invoice_id.present? %>
+          <p class="mb-0 small text-muted">FBR ID: <%= @invoice.fbr_invoice_id %></p>
+        <% end %>
+        <% if @invoice.error_message.present? %>
+          <div class="alert alert-danger mt-3 mb-0 small"><%= @invoice.error_message %></div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><strong>Totals</strong></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Tax</span>
+          <strong><%= number_to_currency(@invoice.tax_amount, unit: 'Rs. ') %></strong>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span>Total</span>
+          <strong class="text-primary"><%= number_to_currency(@invoice.total_amount, unit: 'Rs. ') %></strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info mt-3 small mb-0">
+      <i class="fas fa-lock"></i> Admins can view invoices but cannot create or edit them.
+    </div>
+  </div>
+</div>

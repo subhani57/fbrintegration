@@ -1,0 +1,21 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  username: <%= ENV.fetch("DATABASE_USERNAME", "postgres") %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD", "") %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+
+development:
+  <<: *default
+  database: fbr_invoicing_development
+
+test:
+  <<: *default
+  database: fbr_invoicing_test
+
+production:
+  <<: *default
+  database: fbr_invoicing_production
+  url: <%= ENV['DATABASE_URL'] %>

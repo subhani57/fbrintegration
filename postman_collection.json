@@ -1,0 +1,122 @@
+{
+  "info": {
+    "name": "FBR Invoice API - Sandbox",
+    "description": "Collection for testing FBR Digital Invoice API (Sandbox)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Submit Invoice (Sandbox)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer b27e020e-35ee-3bca-9c8c-7ccedb98bf1e",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invoiceType\": \"Sale Invoice\",\n  \"invoiceDate\": \"2024-12-18\",\n  \"sellerNTNCNIC\": \"0000000000000\",\n  \"sellerBusinessName\": \"Your Business Name\",\n  \"sellerProvince\": \"Punjab\",\n  \"sellerAddress\": \"Seller Address\",\n  \"buyerNTNCNIC\": \"0000000000000\",\n  \"buyerBusinessName\": \"Buyer Business Name\",\n  \"buyerProvince\": \"Punjab\",\n  \"buyerAddress\": \"Buyer Address\",\n  \"buyerRegistrationType\": \"Registered\",\n  \"invoiceRefNo\": \"\",\n  \"scenarioId\": \"SN000\",\n  \"items\": [\n    {\n      \"hsCode\": \"0000.0000\",\n      \"productDescription\": \"Test Product\",\n      \"rate\": \"17%\",\n      \"uoM\": \"Numbers, pieces, units\",\n      \"quantity\": 10,\n      \"totalValues\": 1000,\n      \"valueSalesExcludingST\": 830,\n      \"fixedNotifiedValueOrRetailPrice\": 100,\n      \"salesTaxApplicable\": 170,\n      \"salesTaxWithheldAtSource\": 0,\n      \"extraTax\": \"\",\n      \"furtherTax\": 0,\n      \"sroScheduleNo\": \"\",\n      \"fedPayable\": 0,\n      \"discount\": 0,\n      \"saleType\": \"\",\n      \"sroItemSerialNo\": \"\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://gw.fbr.gov.pk/di_data/v1/di/postinvoicedata_sb",
+          "protocol": "https",
+          "host": [
+            "gw",
+            "fbr",
+            "gov",
+            "pk"
+          ],
+          "path": [
+            "di_data",
+            "v1",
+            "di",
+            "postinvoicedata_sb"
+          ]
+        },
+        "description": "Submit invoice to FBR Sandbox"
+      },
+      "response": []
+    },
+    {
+      "name": "Validate Invoice (Sandbox)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer b27e020e-35ee-3bca-9c8c-7ccedb98bf1e",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          },
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invoiceType\": \"Sale Invoice\",\n  \"invoiceDate\": \"2024-12-18\",\n  \"sellerNTNCNIC\": \"0000000000000\",\n  \"sellerBusinessName\": \"Your Business Name\",\n  \"sellerProvince\": \"Punjab\",\n  \"sellerAddress\": \"Seller Address\",\n  \"buyerNTNCNIC\": \"0000000000000\",\n  \"buyerBusinessName\": \"Buyer Business Name\",\n  \"buyerProvince\": \"Punjab\",\n  \"buyerAddress\": \"Buyer Address\",\n  \"buyerRegistrationType\": \"Registered\",\n  \"invoiceRefNo\": \"\",\n  \"scenarioId\": \"SN000\",\n  \"items\": [\n    {\n      \"hsCode\": \"0000.0000\",\n      \"productDescription\": \"Test Product\",\n      \"rate\": \"17%\",\n      \"uoM\": \"Numbers, pieces, units\",\n      \"quantity\": 10,\n      \"totalValues\": 1000,\n      \"valueSalesExcludingST\": 830,\n      \"fixedNotifiedValueOrRetailPrice\": 100,\n      \"salesTaxApplicable\": 170,\n      \"salesTaxWithheldAtSource\": 0,\n      \"extraTax\": \"\",\n      \"furtherTax\": 0,\n      \"sroScheduleNo\": \"\",\n      \"fedPayable\": 0,\n      \"discount\": 0,\n      \"saleType\": \"\",\n      \"sroItemSerialNo\": \"\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "https://gw.fbr.gov.pk/di_data/v1/di/validateinvoicedata_sb",
+          "protocol": "https",
+          "host": [
+            "gw",
+            "fbr",
+            "gov",
+            "pk"
+          ],
+          "path": [
+            "di_data",
+            "v1",
+            "di",
+            "validateinvoicedata_sb"
+          ]
+        },
+        "description": "Validate invoice data with FBR Sandbox"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "fbr_token",
+      "value": "b27e020e-35ee-3bca-9c8c-7ccedb98bf1e",
+      "type": "string"
+    },
+    {
+      "key": "fbr_base_url",
+      "value": "https://gw.fbr.gov.pk/di_data/v1/di",
+      "type": "string"
+    }
+  ]
+}
+

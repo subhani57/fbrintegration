@@ -1,0 +1,311 @@
+<div class="invoice-show-page">
+  <% hero_class = case @invoice.status
+                  when 'approved', 'submitted' then 'invoice-hero--success'
+                  when 'failed', 'rejected' then 'invoice-hero--danger'
+                  when 'submitting', 'validating' then 'invoice-hero--warning'
+                  else ''
+                  end %>
+
+  <div class="invoice-hero <%= hero_class %>">
+    <div class="row align-items-center position-relative" style="z-index: 1;">
+      <div class="col-md-8">
+        <div class="invoice-hero__number">
+          <i class="fas fa-file-invoice-dollar me-2 opacity-75"></i>
+          <%= @invoice.invoice_number %>
+        </div>
+        <div class="invoice-hero__meta">
+          <%= @invoice.invoice_type %> &middot;
+          <%= @invoice.invoice_date.strftime('%d %B %Y') %>
+          <% if @invoice.buyer_name.present? %>
+            &middot; <%= @invoice.buyer_name %>
+          <% end %>
+        </div>
+      </div>
+      <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <span class="invoice-hero__badge">
+          <i class="fas fa-circle me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
+          <%= @invoice.status&.humanize || 'Draft' %>
+        </span>
+        <% if invoice_fbr_submitted?(@invoice) %>
+          <span class="invoice-hero__badge ms-2">
+            <i class="fas fa-check-circle me-1"></i> FBR Verified
+          </span>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <% if %w[submitting validating].include?(@invoice.status) %>
+    <%= turbo_stream_from @invoice %>
+    <div id="invoice-status-poll"
+         class="alert alert-info d-flex align-items-center gap-3 mb-4 invoice-status-poll"
+         data-controller="invoice-status-poll"
+         data-invoice-status-poll-url-value="<%= status_invoice_path(@invoice, format: :json) %>"
+         data-invoice-status-poll-status-value="<%= @invoice.status %>"
+         data-invoice-status-poll-retry-url-value="<%= @invoice.status == 'validating' ? validate_invoice_path(@invoice) : submit_invoice_path(@invoice) %>"
+         role="status"
+         aria-live="polite">
+      <i class="fas fa-spinner fa-spin fa-lg" aria-hidden="true"></i>
+      <div>
+        <strong><%= @invoice.status == 'validating' ? 'Validating with FBR…' : 'Submitting to FBR…' %></strong>
+        <div class="small mb-0 opacity-75">This page will refresh automatically when complete.</div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="d-flex flex-wrap gap-2 mb-4 invoice-action-bar">
+    <%= link_to invoices_path, class: 'btn btn-outline-secondary' do %>
+      <i class="fas fa-arrow-left"></i> All Invoices
+    <% end %>
+
+    <% if current_user.can_manage_invoices? %>
+      <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
+        <i class="fas fa-plus"></i> New Invoice
+      <% end %>
+    <% end %>
+
+    <% if current_user.can_manage_invoices? && !invoice_fbr_submitted?(@invoice) && !%w[submitting validating].include?(@invoice.status) %>
+      <% submission_blocked = fbr_submission_blocked_reason(current_user, invoice: @invoice) %>
+      <%= link_to edit_invoice_path(@invoice), class: 'btn btn-outline-primary' do %>
+        <i class="fas fa-edit"></i> Edit
+      <% end %>
+      <% if @invoice.may_cancel? %>
+        <%= button_to cancel_invoice_path(@invoice), method: :post, class: 'btn btn-outline-warning',
+            form: { data: { turbo_confirm: 'Cancel this invoice?' } } do %>
+          <i class="fas fa-ban"></i> Cancel
+        <% end %>
+      <% end %>
+      <% unless submission_blocked.present? %>
+        <%= button_to validate_invoice_path(@invoice),
+            method: :post,
+            class: 'btn btn-outline-info',
+            form: { data: { turbo_confirm: fbr_submission_confirm('validate') } } do %>
+          <i class="fas fa-check-double"></i> Validate
+        <% end %>
+        <%= button_to submit_invoice_path(@invoice),
+            method: :post,
+            class: "btn btn-#{production_fbr_active? ? 'danger' : 'success'}",
+            form: { data: { turbo_confirm: fbr_submit_confirm } } do %>
+          <i class="fas fa-paper-plane"></i> Submit to FBR<%= ' (Production)' if production_fbr_active? %>
+        <% end %>
+      <% end %>
+    <% end %>
+    <% if current_user.can_manage_invoices? %>
+      <%= form_with url: save_template_invoice_path(@invoice), method: :post, local: true, class: 'd-flex gap-2 align-items-center' do %>
+        <%= text_field_tag :template_name, '', placeholder: 'Template name', class: 'form-control form-control-sm', style: 'width:10rem' %>
+        <%= submit_tag 'Save as template', class: 'btn btn-sm btn-outline-secondary' %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <% if invoice_fbr_submitted?(@invoice) %>
+        <%= render 'invoices/download_panel', invoice: @invoice, user: current_user %>
+      <% else %>
+        <div class="invoice-pending-panel">
+          <div class="d-flex align-items-start gap-3">
+            <div class="invoice-download-panel__icon" style="background: linear-gradient(135deg, #fd7e14, #ffc107); box-shadow: 0 8px 20px rgba(253, 126, 20, 0.3);">
+              <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="flex-grow-1">
+              <div class="invoice-pending-panel__title">Invoice not yet submitted to FBR</div>
+              <p class="invoice-pending-panel__text mb-0">
+                Validate and submit this invoice to FBR. Once approved, you can preview and download your official PDF with your company logo.
+              </p>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <div class="invoice-detail-card">
+        <div class="invoice-detail-card__header">
+          <i class="fas fa-info-circle"></i> Invoice Details
+        </div>
+        <div class="invoice-detail-card__body">
+          <div class="invoice-info-grid">
+            <div class="invoice-info-item">
+              <label>Invoice Number</label>
+              <span><%= @invoice.invoice_number %></span>
+            </div>
+            <div class="invoice-info-item">
+              <label>Invoice Date</label>
+              <span><%= @invoice.invoice_date.strftime('%d %b %Y') %></span>
+            </div>
+            <div class="invoice-info-item">
+              <label>Invoice Type</label>
+              <span><%= @invoice.invoice_type %></span>
+            </div>
+            <div class="invoice-info-item">
+              <label>Status</label>
+              <span>
+                <span class="badge bg-<%= status_badge_color(@invoice.status) %>">
+                  <%= @invoice.status&.humanize || 'Draft' %>
+                </span>
+              </span>
+            </div>
+            <% if @invoice.fbr_invoice_id.present? %>
+              <div class="invoice-info-item">
+                <label>FBR Invoice ID</label>
+                <span><%= @invoice.fbr_invoice_id %></span>
+              </div>
+            <% end %>
+            <% if @invoice.scenario_id.present? %>
+              <div class="invoice-info-item">
+                <label>Scenario ID</label>
+                <span><%= @invoice.scenario_id %></span>
+              </div>
+            <% end %>
+            <% if @invoice.submitted_at.present? %>
+              <div class="invoice-info-item">
+                <label>Submitted At</label>
+                <span><%= @invoice.submitted_at.strftime('%d %b %Y, %I:%M %p') %></span>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-detail-card">
+        <div class="invoice-detail-card__header">
+          <i class="fas fa-user-tie"></i> Buyer Information
+        </div>
+        <div class="invoice-detail-card__body">
+          <div class="invoice-info-grid">
+            <div class="invoice-info-item">
+              <label>Name</label>
+              <span><%= @invoice.buyer_name %></span>
+            </div>
+            <div class="invoice-info-item">
+              <label>NTN / CNIC</label>
+              <span><%= @invoice.buyer_ntn %></span>
+            </div>
+            <div class="invoice-info-item">
+              <label>Province</label>
+              <span><%= @invoice.buyer_province %></span>
+            </div>
+            <div class="invoice-info-item">
+              <label>Registration Type</label>
+              <span><%= @invoice.buyer_registration_type %></span>
+            </div>
+            <div class="invoice-info-item" style="grid-column: 1 / -1;">
+              <label>Address</label>
+              <span><%= @invoice.buyer_address %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="invoice-detail-card">
+        <div class="invoice-detail-card__header">
+          <i class="fas fa-list"></i> Line Items
+          <span class="badge bg-primary ms-auto"><%= @invoice.items.size %> items</span>
+        </div>
+        <div class="invoice-detail-card__body p-0">
+          <div class="table-responsive">
+            <table class="table invoice-items-table mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Description</th>
+                  <th>HS Code</th>
+                  <th class="text-end">Qty</th>
+                  <th class="text-end">Unit Price</th>
+                  <th class="text-end">Tax</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @invoice.items.each_with_index do |item, i| %>
+                  <tr>
+                    <td class="text-muted"><%= i + 1 %></td>
+                    <td><%= item.description %></td>
+                    <td><code class="small"><%= item.hs_code %></code></td>
+                    <td class="text-end"><%= item.quantity %> <%= item.uom %></td>
+                    <td class="text-end"><%= format_pkr(item.unit_price) %></td>
+                    <td class="text-end"><%= item.tax_rate %>%</td>
+                    <td class="text-end fw-semibold"><%= format_pkr(item.total_value || (item.quantity.to_f * item.unit_price.to_f)) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="6" class="text-end">Grand Total</td>
+                  <td class="text-end"><%= format_pkr(@invoice.total_amount) %></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="invoice-summary-card mb-4">
+        <div class="invoice-summary-card__header">
+          <i class="fas fa-calculator me-2 text-primary"></i> Amount Summary
+        </div>
+        <div class="px-3 pb-3 pt-2">
+          <div class="invoice-summary-row">
+            <span>Net Amount</span>
+            <span class="fw-semibold"><%= format_pkr(invoice_net_amount(@invoice)) %></span>
+          </div>
+          <div class="invoice-summary-row">
+            <span>Sales Tax</span>
+            <span class="fw-semibold"><%= format_pkr(@invoice.tax_amount) %></span>
+          </div>
+          <div class="invoice-summary-row invoice-summary-row--total">
+            <span>Total</span>
+            <span class="amount"><%= format_pkr(@invoice.total_amount) %></span>
+          </div>
+        </div>
+      </div>
+
+      <% if current_user.business_name.present? || current_user.company_logo.present? %>
+        <div class="invoice-detail-card">
+          <div class="invoice-detail-card__header">
+            <i class="fas fa-building"></i> Your Business
+          </div>
+          <div class="invoice-detail-card__body">
+            <div class="d-flex align-items-center gap-3">
+              <% if current_user.company_logo.present? %>
+                <%= image_tag current_user.company_logo.thumb.url,
+                    alt: 'Company logo',
+                    class: 'rounded',
+                    style: 'width: 56px; height: 56px; object-fit: contain; border: 1px solid #e2e8f0; padding: 4px; background: #fff;' %>
+              <% else %>
+                <div class="rounded d-flex align-items-center justify-content-center bg-light text-muted"
+                     style="width: 56px; height: 56px; font-size: 1.25rem;">
+                  <i class="fas fa-building"></i>
+                </div>
+              <% end %>
+              <div>
+                <div class="fw-semibold"><%= current_user.business_name.presence || '—' %></div>
+                <div class="small text-muted"><%= current_user.ntn_cnic %></div>
+              </div>
+            </div>
+            <% unless current_user.company_logo.present? %>
+              <% if current_user.taxpayer? %>
+                <p class="small text-muted mt-3 mb-0">
+                  <%= link_to 'Upload your logo', edit_profile_path, class: 'text-decoration-none' %>
+                  to include it on downloaded invoices.
+                </p>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @invoice.error_message.present? %>
+        <div class="invoice-detail-card border-danger">
+          <div class="invoice-detail-card__header bg-danger text-white">
+            <i class="fas fa-exclamation-triangle"></i> Error
+          </div>
+          <div class="invoice-detail-card__body">
+            <p class="text-danger mb-0 small"><%= @invoice.error_message %></p>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

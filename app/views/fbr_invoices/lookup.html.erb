@@ -1,0 +1,48 @@
+<div class="invoice-form-page">
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="fbr-page-header mb-1">FBR Lookup Result</h1>
+      <code class="fs-6"><%= @fbr_number %></code>
+      <% if @source.present? %>
+        <span class="badge bg-secondary ms-2">Source: <%= @source %></span>
+      <% end %>
+    </div>
+    <%= link_to fbr_invoices_path, class: 'btn btn-outline-secondary' do %>
+      <i class="fas fa-arrow-left"></i> Back
+    <% end %>
+  </div>
+
+  <% if @notice.present? %>
+    <div class="alert alert-info"><%= @notice %></div>
+  <% end %>
+
+  <% if @local_invoice %>
+    <div class="card border-success mb-4">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <h2 class="h6 text-success mb-1"><i class="fas fa-check-circle"></i> Found in your account</h2>
+          <p class="mb-0 text-muted">Invoice <%= @local_invoice.invoice_number %> · <%= @local_invoice.buyer_name %></p>
+        </div>
+        <div class="d-flex gap-2">
+          <%= link_to download_pdf_fbr_invoice_path(@local_invoice), class: 'btn btn-success' do %>
+            <i class="fas fa-download"></i> Download PDF
+          <% end %>
+          <%= link_to fbr_invoice_path(@local_invoice), class: 'btn btn-outline-primary' do %>
+            View details
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="card">
+    <div class="card-header fw-semibold">Data from FBR</div>
+    <div class="card-body">
+      <% if @fbr_data.present? %>
+        <pre class="small bg-light p-3 rounded mb-0" style="max-height: 480px; overflow: auto;"><%= JSON.pretty_generate(@fbr_data) %></pre>
+      <% else %>
+        <p class="text-muted mb-0">No additional data returned.</p>
+      <% end %>
+    </div>
+  </div>
+</div>

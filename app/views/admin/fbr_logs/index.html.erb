@@ -1,0 +1,17 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-list text-primary"></i> FBR API logs</h1>
+<div class="table-responsive card"><table class="table table-sm mb-0">
+  <thead><tr><th>Time</th><th>User</th><th>Invoice</th><th>Env</th><th>Status</th><th>Endpoint</th></tr></thead>
+  <tbody>
+    <% @logs.each do |log| %>
+      <tr>
+        <td><%= log.created_at.strftime('%d %b %H:%M') %></td>
+        <td><%= log.user&.email %></td>
+        <td><%= log.invoice&.invoice_number || '—' %></td>
+        <td><%= log.environment %></td>
+        <td><%= log.status_code %></td>
+        <td class="small text-truncate" style="max-width:16rem"><%= log.endpoint %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table></div>
+<%= paginate @logs if @logs.respond_to?(:total_pages) %>

@@ -1,0 +1,56 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-chart-bar text-primary"></i> System Reports</h1>
+
+<%= form_with url: admin_reports_path, method: :get, local: true, class: 'row g-3 mb-4' do |f| %>
+  <div class="col-md-3">
+    <%= f.label :start_date, class: 'form-label' %>
+    <%= f.date_field :start_date, value: @start_date, class: 'form-control' %>
+  </div>
+  <div class="col-md-3">
+    <%= f.label :end_date, class: 'form-label' %>
+    <%= f.date_field :end_date, value: @end_date, class: 'form-control' %>
+  </div>
+  <div class="col-md-4 align-self-end d-flex gap-2">
+    <%= f.submit 'Filter', class: 'btn btn-primary' %>
+    <%= link_to admin_reports_path(format: :csv, start_date: @start_date, end_date: @end_date), class: 'btn btn-outline-secondary' do %>
+      <i class="fas fa-download"></i> Export CSV
+    <% end %>
+  </div>
+<% end %>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card fbr-stat-card"><div class="card-body py-3"><small class="text-muted">Invoices</small><div class="h4 mb-0"><%= @summary[:total_invoices] %></div></div></div></div>
+  <div class="col-md-3"><div class="card fbr-stat-card"><div class="card-body py-3"><small class="text-muted">Total Amount</small><div class="h5 mb-0"><%= format_pkr(@summary[:total_amount]) %></div></div></div></div>
+  <div class="col-md-3"><div class="card fbr-stat-card"><div class="card-body py-3"><small class="text-muted">Submitted</small><div class="h4 mb-0 text-success"><%= @summary[:submitted] %></div></div></div></div>
+  <div class="col-md-3"><div class="card fbr-stat-card"><div class="card-body py-3"><small class="text-muted">Failed</small><div class="h4 mb-0 text-danger"><%= @summary[:failed] %></div></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Number</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Tax</th>
+          <th>User</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @invoices.limit(200).each do |inv| %>
+          <tr>
+            <td><%= inv.invoice_number %></td>
+            <td><%= inv.invoice_date %></td>
+            <td><%= format_pkr(inv.total_amount) %></td>
+            <td><%= format_pkr(inv.tax_amount) %></td>
+            <td><%= inv.user&.email %></td>
+            <td><%= inv.status %></td>
+            <td><%= link_to 'View', admin_invoice_path(inv), class: 'btn btn-sm btn-outline-primary' %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

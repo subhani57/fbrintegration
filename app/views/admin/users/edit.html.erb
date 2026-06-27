@@ -1,0 +1,61 @@
+<h1>Edit User</h1>
+
+<%= form_with model: [:admin, @user], local: true do |f| %>
+  <% if @user.errors.any? %>
+    <div class="alert alert-danger">
+      <h4>There were errors</h4>
+      <ul>
+        <% @user.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- Email -->
+  <div class="mb-3">
+    <%= f.label :email %>
+    <%= f.email_field :email, class: 'form-control' %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :role %>
+    <%= f.select :role, User::ROLES.map { |r| [r.humanize, r] }, {}, class: 'form-select' %>
+    <small class="text-muted">Viewer accounts can browse invoices and reports but cannot create or submit.</small>
+  </div>
+
+  <!-- NTN / CNIC -->
+  <div class="mb-3">
+    <%= f.label :ntn_cnic, "NTN / CNIC" %>
+    <%= f.text_field :ntn_cnic, class: 'form-control' %>
+  </div>
+
+  <!-- Business Name -->
+  <div class="mb-3">
+    <%= f.label :business_name, "Business Name" %>
+    <%= f.text_field :business_name, class: 'form-control' %>
+  </div>
+
+  <!-- Address -->
+  <div class="mb-3">
+    <%= f.label :address %>
+    <%= f.text_area :address, class: 'form-control', rows: 3 %>
+  </div>
+
+  <% if @user.taxpayer? %>
+    <div class="mb-3">
+      <%= f.label :preferred_fbr_environment, 'Active environment for submissions' %>
+      <%= f.select :preferred_fbr_environment,
+          FbrConfiguration::ENVIRONMENTS.map { |e| [e.humanize, e] },
+          {},
+          class: 'form-select' %>
+      <small class="text-muted">Token used when this user validates or submits invoices to FBR.</small>
+    </div>
+  <% end %>
+
+  <!-- Submit -->
+  <div class="mt-4">
+    <%= f.submit 'Save', class: 'btn btn-primary' %>
+    <%= link_to 'Back', admin_users_path, class: 'btn btn-link' %>
+  </div>
+<% end %>

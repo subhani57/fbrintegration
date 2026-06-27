@@ -1,0 +1,52 @@
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="fbr-page-header mb-4">
+      <h2><i class="fas fa-route text-primary"></i> Getting started</h2>
+      <p class="text-muted mb-0">Complete these steps to start submitting FBR invoices.</p>
+    </div>
+
+    <div class="list-group mb-4">
+      <div class="list-group-item <%= @step >= 1 ? 'list-group-item-success' : (@step == 0 ? 'active' : '') %>">
+        <strong>1. Business profile</strong>
+      </div>
+      <div class="list-group-item <%= @step >= 2 ? 'list-group-item-success' : (@step == 1 ? 'active' : '') %>">
+        <strong>2. FBR sandbox token</strong>
+      </div>
+      <div class="list-group-item <%= @step >= 3 ? 'list-group-item-success' : (@step == 2 ? 'active' : '') %>">
+        <strong>3. Create your first invoice</strong>
+      </div>
+    </div>
+
+    <% if @step == 0 %>
+      <%= form_with url: onboarding_path, method: :patch, local: true do |f| %>
+        <%= hidden_field_tag :step, 1 %>
+        <div class="card mb-3"><div class="card-body">
+          <div class="mb-3"><%= label_tag 'user[business_name]', 'Business name' %><%= text_field_tag 'user[business_name]', current_user.business_name, class: 'form-control', required: true %></div>
+          <div class="mb-3"><%= label_tag 'user[ntn_cnic]', 'NTN / CNIC' %><%= text_field_tag 'user[ntn_cnic]', current_user.ntn_cnic, class: 'form-control', required: true %></div>
+          <div class="mb-3"><%= label_tag 'user[seller_province]', 'Province' %><%= select_tag 'user[seller_province]', options_for_select(%w[Punjab Sindh KPK Balochistan ICT AJK GB], current_user.seller_province), class: 'form-select' %></div>
+          <div class="mb-3"><%= label_tag 'user[address]', 'Address' %><%= text_area_tag 'user[address]', current_user.address, class: 'form-control', rows: 2, required: true %></div>
+          <%= submit_tag 'Save & continue', class: 'btn btn-primary' %>
+        </div></div>
+      <% end %>
+    <% elsif @step == 1 %>
+      <%= form_with url: onboarding_path, method: :patch, local: true do %>
+        <%= hidden_field_tag :step, 2 %>
+        <div class="card mb-3"><div class="card-body">
+          <p class="text-muted">Paste your FBR sandbox API token from the IRIS developer portal.</p>
+          <div class="mb-3"><%= label_tag 'fbr_configuration[token]', 'Sandbox token' %><%= text_field_tag 'fbr_configuration[token]', '', class: 'form-control', required: true %></div>
+          <%= submit_tag 'Save token & continue', class: 'btn btn-primary' %>
+        </div></div>
+      <% end %>
+    <% else %>
+      <div class="card mb-3"><div class="card-body">
+        <p>You're ready to create invoices and submit them to FBR sandbox.</p>
+        <%= form_with url: onboarding_path, method: :patch do %>
+          <%= hidden_field_tag :step, 3 %>
+          <%= submit_tag 'Go to invoices', class: 'btn btn-primary' %>
+        <% end %>
+      </div></div>
+    <% end %>
+
+    <%= button_to 'Skip setup', skip_onboarding_path, method: :post, class: 'btn btn-link' %>
+  </div>
+</div>

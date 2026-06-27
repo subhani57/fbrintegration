@@ -1,0 +1,16 @@
+<h2 class="fbr-page-header mb-4"><i class="fas fa-plug text-primary"></i> Webhooks</h2>
+<%= link_to 'Add webhook', new_webhook_path, class: 'btn btn-primary mb-3' %>
+<div class="list-group">
+  <% @webhooks.each do |w| %>
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        <code><%= w.url %></code>
+        <div class="small text-muted">Events: <%= w.events.join(', ') %></div>
+      </div>
+      <div>
+        <%= link_to 'Edit', edit_webhook_path(w), class: 'btn btn-sm btn-outline-primary' %>
+        <%= button_to 'Delete', webhook_path(w), method: :delete, class: 'btn btn-sm btn-outline-danger' %>
+      </div>
+    </div>
+  <% end %>
+</div>

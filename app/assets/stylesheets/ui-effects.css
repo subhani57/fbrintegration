@@ -1,0 +1,482 @@
+/* App-wide UI motion & polish */
+
+/* ── Top loading bar ── */
+.fbr-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.fbr-progress-bar--active {
+  opacity: 1;
+}
+
+.fbr-progress-bar__fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #20c997, #157347, #0f5132);
+  box-shadow: 0 0 12px rgba(32, 201, 151, 0.6);
+  transition: width 0.35s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── Main content entrance ── */
+.fbr-main-content {
+  animation: fbrMainIn 0.45s ease both;
+}
+
+@keyframes fbrMainIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Scroll reveal ── */
+.fbr-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.55s ease var(--fbr-reveal-delay, 0ms),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) var(--fbr-reveal-delay, 0ms);
+}
+
+.fbr-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Toast alerts ── */
+.fbr-toast {
+  position: relative;
+  overflow: hidden;
+  border: none !important;
+  box-shadow: 0 10px 40px rgba(15, 81, 50, 0.15);
+  transform: translateY(-12px);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
+}
+
+.fbr-toast--visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.fbr-toast--hiding {
+  transform: translateY(-8px);
+  opacity: 0;
+}
+
+.fbr-toast__timer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(21, 115, 71, 0.25);
+  transform-origin: left;
+  animation: fbrToastTimer linear forwards;
+}
+
+.alert-danger.fbr-toast .fbr-toast__timer {
+  background: rgba(220, 53, 69, 0.35);
+}
+
+@keyframes fbrToastTimer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* ── Flash → hidden until converted to floating notify ── */
+.fbr-flash {
+  position: fixed !important;
+  left: -9999px !important;
+  top: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
+}
+
+/* ── Floating toast stack (top-right) ── */
+.fbr-toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10040;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(380px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.fbr-notify {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 2.25rem 0.9rem 0.9rem;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(15, 81, 50, 0.18);
+  border-left: 4px solid #157347;
+  overflow: hidden;
+  pointer-events: auto;
+  transform: translateX(16px);
+  opacity: 0;
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+}
+
+.fbr-notify--visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.fbr-notify--hiding {
+  transform: translateX(12px);
+  opacity: 0;
+}
+
+.fbr-notify--success { border-left-color: #157347; }
+.fbr-notify--danger { border-left-color: #dc3545; }
+.fbr-notify--warning { border-left-color: #fd7e14; }
+.fbr-notify--info { border-left-color: #0d6efd; }
+
+.fbr-notify__icon {
+  flex-shrink: 0;
+  width: 1.75rem;
+  text-align: center;
+  font-size: 1.15rem;
+  line-height: 1.4;
+}
+
+.fbr-notify--success .fbr-notify__icon { color: #157347; }
+.fbr-notify--danger .fbr-notify__icon { color: #dc3545; }
+.fbr-notify--warning .fbr-notify__icon { color: #fd7e14; }
+.fbr-notify--info .fbr-notify__icon { color: #0d6efd; }
+
+.fbr-notify__body { flex: 1; min-width: 0; }
+
+.fbr-notify__title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #0f172a;
+  margin-bottom: 0.15rem;
+}
+
+.fbr-notify__message {
+  font-size: 0.875rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.fbr-notify__close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+
+.fbr-notify__close:hover { color: #64748b; }
+
+.fbr-notify__timer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(21, 115, 71, 0.2);
+  transform-origin: left;
+  animation: fbrToastTimer linear forwards;
+}
+
+.fbr-notify--danger .fbr-notify__timer { background: rgba(220, 53, 69, 0.25); }
+
+/* ── Custom confirm / alert dialog ── */
+.fbr-dialog-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.fbr-dialog-root[hidden] { display: none !important; }
+
+.fbr-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.fbr-dialog-root--visible .fbr-dialog-backdrop { opacity: 1; }
+
+.fbr-dialog {
+  position: relative;
+  width: min(420px, 100%);
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.5rem 1.5rem 1.25rem;
+  box-shadow: 0 24px 60px rgba(15, 81, 50, 0.22);
+  text-align: center;
+  transform: translateY(12px) scale(0.98);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+.fbr-dialog-root--visible .fbr-dialog {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.fbr-dialog__icon {
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.85rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  background: rgba(21, 115, 71, 0.1);
+  color: #157347;
+}
+
+.fbr-dialog-root--warning .fbr-dialog__icon {
+  background: rgba(253, 126, 20, 0.12);
+  color: #fd7e14;
+}
+
+.fbr-dialog-root--danger .fbr-dialog__icon {
+  background: rgba(220, 53, 69, 0.12);
+  color: #dc3545;
+}
+
+.fbr-dialog-root--info .fbr-dialog__icon {
+  background: rgba(13, 110, 253, 0.12);
+  color: #0d6efd;
+}
+
+.fbr-dialog__title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.5rem;
+}
+
+.fbr-dialog__message {
+  font-size: 0.9375rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0 0 1.25rem;
+  white-space: pre-line;
+}
+
+.fbr-dialog__actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.fbr-dialog__actions .btn {
+  min-width: 6.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+body.fbr-dialog-open { overflow: hidden; }
+
+@media (max-width: 575.98px) {
+  .fbr-toast-stack {
+    top: auto;
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    width: auto;
+  }
+}
+
+/* ── Navbar scroll ── */
+.navbar-fbr {
+  transition: box-shadow 0.25s ease, padding 0.25s ease, backdrop-filter 0.25s ease;
+}
+
+.navbar-fbr--scrolled {
+  box-shadow: 0 4px 24px rgba(15, 81, 50, 0.35) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* ── Button ripple ── */
+.fbr-btn-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.fbr-btn-ripple__wave {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+  animation: fbrRipple 0.55s ease-out forwards;
+}
+
+@keyframes fbrRipple {
+  to {
+    transform: scale(28);
+    opacity: 0;
+  }
+}
+
+/* ── Form focus glow ── */
+.fbr-field-focus .form-label {
+  color: var(--fbr-primary-dark);
+}
+
+.fbr-field-focus .form-control,
+.fbr-field-focus .form-select {
+  border-color: var(--fbr-primary);
+  box-shadow: 0 0 0 3px rgba(21, 115, 71, 0.12);
+}
+
+/* ── Stat cards extra polish ── */
+.fbr-stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.fbr-stat-card::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(32, 201, 151, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.fbr-stat-icon {
+  transition: transform 0.25s ease;
+}
+
+.fbr-stat-card:hover .fbr-stat-icon {
+  transform: scale(1.08) rotate(-4deg);
+}
+
+/* ── Table row highlight (background only — no transform; avoids horizontal scroll) ── */
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+/* ── Page header accent ── */
+.fbr-page-header {
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.fbr-page-header::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  margin-top: 0.65rem;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #157347, #20c997);
+}
+
+.fbr-page-header.d-flex::after,
+.fbr-page-header.flex-wrap::after {
+  display: none;
+}
+
+/* ── Card hover lift ── */
+.card:not(.fbr-stat-card) {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:not(.fbr-stat-card):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(15, 81, 50, 0.1);
+}
+
+/* ── Auth page polish ── */
+.auth-brand__orb {
+  animation: fbrOrbFloat 12s ease-in-out infinite;
+}
+
+.auth-brand__orb--2 {
+  animation-delay: -4s;
+}
+
+@keyframes fbrOrbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12px, -18px) scale(1.05); }
+}
+
+.auth-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.auth-card:hover {
+  box-shadow: 0 16px 48px rgba(15, 81, 50, 0.12);
+}
+
+/* ── Admin sidebar links ── */
+.admin-nav .nav-link {
+  transition: background 0.2s ease, transform 0.15s ease, padding-left 0.2s ease;
+}
+
+.admin-nav .nav-link:hover {
+  transform: translateX(3px);
+}
+
+.admin-nav .nav-link.active {
+  box-shadow: 0 4px 14px rgba(21, 115, 71, 0.25);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .fbr-reveal,
+  .fbr-main-content,
+  .fbr-toast,
+  .fbr-stat-card,
+  .card,
+  .table tbody tr {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .fbr-progress-bar {
+    display: none;
+  }
+}

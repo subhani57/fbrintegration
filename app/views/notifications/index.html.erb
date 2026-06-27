@@ -1,0 +1,21 @@
+<h2 class="fbr-page-header mb-4"><i class="fas fa-bell text-primary"></i> Notifications</h2>
+<div class="d-flex justify-content-end mb-3">
+  <%= button_to 'Mark all read', mark_all_read_notifications_path, method: :patch, class: 'btn btn-sm btn-outline-secondary' %>
+</div>
+<div class="list-group">
+  <% @notifications.each do |n| %>
+    <div class="list-group-item <%= 'list-group-item-light' if n.read? %>">
+      <div class="d-flex justify-content-between">
+        <div>
+          <strong><%= n.title %></strong>
+          <p class="mb-0 small text-muted"><%= n.body %></p>
+        </div>
+        <div class="text-end">
+          <small class="text-muted"><%= time_ago_in_words(n.created_at) %> ago</small>
+          <% if n.link_path.present? %><div><%= link_to 'View', n.link_path, class: 'small' %></div><% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+<%= paginate @notifications if @notifications.respond_to?(:total_pages) && @notifications.total_pages > 1 %>

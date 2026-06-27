@@ -1,0 +1,48 @@
+<% content_for :auth_title, 'Sign Up' %>
+
+<div class="auth-card">
+  <div class="auth-card__icon auth-card__icon--signup">
+    <i class="fas fa-user-plus"></i>
+  </div>
+
+  <h2 class="auth-card__title">Create your account</h2>
+  <p class="auth-card__subtitle">Start submitting FBR-compliant invoices today</p>
+
+  <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { class: 'auth-form' }) do |f| %>
+    <%= render 'devise/shared/error_messages', resource: resource %>
+
+    <div class="auth-field">
+      <%= f.label :email, class: 'auth-label' %>
+      <div class="auth-input-wrap">
+        <i class="fas fa-envelope auth-input-icon"></i>
+        <%= f.email_field :email, autofocus: true, autocomplete: 'email',
+            class: 'form-control auth-input', placeholder: 'you@company.com' %>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <%= f.label :password, class: 'auth-label' %>
+      <% if @minimum_password_length %>
+        <span class="auth-hint">(<%= @minimum_password_length %> characters minimum)</span>
+      <% end %>
+      <div class="auth-input-wrap">
+        <i class="fas fa-lock auth-input-icon"></i>
+        <%= f.password_field :password, autocomplete: 'new-password',
+            class: 'form-control auth-input', placeholder: 'Choose a strong password' %>
+      </div>
+    </div>
+
+    <div class="auth-field">
+      <%= f.label :password_confirmation, 'Confirm password', class: 'auth-label' %>
+      <div class="auth-input-wrap">
+        <i class="fas fa-lock auth-input-icon"></i>
+        <%= f.password_field :password_confirmation, autocomplete: 'new-password',
+            class: 'form-control auth-input', placeholder: 'Repeat your password' %>
+      </div>
+    </div>
+
+    <%= f.submit 'Create Account', class: 'btn btn-primary auth-submit w-100' %>
+  <% end %>
+
+  <%= render 'devise/shared/links' %>
+</div>

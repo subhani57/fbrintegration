@@ -1,0 +1,19 @@
+<% display_id = "hs_code_display_#{f.options[:child_index] || f.object.object_id}" %>
+<div class="invoice-hs-code-combobox invoice-form-input mb-0"
+     data-controller="invoice-hs-code"
+     data-invoice-hs-code-url-value="<%= search_hs_codes_api_v1_reference_data_path(format: :json) %>"
+     data-invoice-hs-code-selected-value="<%= f.object.hs_code.to_s %>">
+  <label class="form-label" for="<%= display_id %>">HS Code</label>
+  <%= f.hidden_field :hs_code,
+      class: "hs-code-field",
+      data: { invoice_hs_code_target: "hidden" } %>
+  <input type="text"
+         id="<%= display_id %>"
+         class="form-control"
+         placeholder="Type 2+ characters to search"
+         autocomplete="off"
+         data-invoice-hs-code-target="input"
+         data-action="input->invoice-hs-code#search focus->invoice-hs-code#onFocus blur->invoice-hs-code#onBlur keydown->invoice-hs-code#keydown">
+  <div class="invoice-hs-code-results" data-invoice-hs-code-target="results" hidden></div>
+  <div class="form-text">Type at least 2 characters to search FBR codes.</div>
+</div>

@@ -1,0 +1,9 @@
+<li class="page-item <%= 'disabled' if current_page.last? %>">
+  <% if current_page.last? %>
+    <span class="page-link page-link--arrow" aria-hidden="true"><i class="fas fa-chevron-right"></i></span>
+  <% else %>
+    <%= link_to url, class: 'page-link page-link--arrow', rel: 'next', remote: remote, aria: { label: 'Next page' } do %>
+      <i class="fas fa-chevron-right"></i>
+    <% end %>
+  <% end %>
+</li>

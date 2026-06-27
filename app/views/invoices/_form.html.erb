@@ -1,0 +1,307 @@
+<%= simple_form_for(@invoice, html: { class: 'invoice-form needs-validation', novalidate: true, data: { controller: 'invoice-form' } }) do |f| %>
+  <div class="row g-4 invoice-form-layout">
+    <div class="col-lg-8 invoice-form-main">
+
+      <!-- Section 1: Invoice details -->
+      <section class="invoice-form-section-card" id="section-invoice">
+        <div class="invoice-form-section-card__header">
+          <div class="invoice-form-section-card__step">1</div>
+          <div>
+            <h2 class="invoice-form-section-card__title">Invoice details</h2>
+            <p class="invoice-form-section-card__hint">Date and document type for FBR</p>
+          </div>
+        </div>
+        <div class="invoice-form-section-card__body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= f.input :invoice_date, as: :string, label: 'Invoice date',
+                  input_html: { class: 'form-control datepicker', value: f.object.invoice_date || Date.today },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
+            <div class="col-md-6">
+              <%= f.input :invoice_type, label: 'Invoice type',
+                  collection: ['Sale Invoice', 'Debit Note'],
+                  include_blank: false,
+                  input_html: { id: 'invoice_invoice_type' },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
+            <div class="col-md-12" id="original-invoice-field" style="<%= 'display:none' unless f.object.debit_note? %>">
+              <%= f.input :original_invoice_id, label: 'Original FBR invoice (for debit note)',
+                  collection: (@submitted_invoices || []).map { |i| ["#{i.invoice_number} — #{i.fbr_invoice_id}", i.id] },
+                  include_blank: 'Select submitted invoice',
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Buyer -->
+      <section class="invoice-form-section-card" id="section-buyer">
+        <div class="invoice-form-section-card__header">
+          <div class="invoice-form-section-card__step">2</div>
+          <div>
+            <h2 class="invoice-form-section-card__title">Buyer information</h2>
+            <p class="invoice-form-section-card__hint">Registered buyer details as required by FBR</p>
+          </div>
+        </div>
+        <div class="invoice-form-section-card__body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="buyer_company_select" class="form-label">Select buyer company</label>
+              <div class="d-flex flex-wrap gap-2 align-items-start">
+                <select id="buyer_company_select" class="form-select flex-grow-1" <%= @companies.blank? ? 'disabled' : '' %>>
+                  <option value="">— Choose a saved company —</option>
+                  <% (@companies || []).each do |company| %>
+                    <option value="<%= company.id %>"
+                        data-name="<%= h(company.name) %>"
+                        data-ntn="<%= h(company.ntn) %>"
+                        data-address="<%= h(company.address.to_s) %>"
+                        data-province="<%= h(company.province) %>"
+                        data-registration-type="<%= h(company.registration_type) %>"
+                        <%= @selected_buyer_company_id.to_s == company.id.to_s ? 'selected' : '' %>>
+                      <%= company.name %> (<%= company.ntn %>)
+                    </option>
+                  <% end %>
+                </select>
+                <%= link_to companies_path, class: 'btn btn-outline-secondary btn-sm' do %>
+                  <i class="fas fa-building"></i> Manage
+                <% end %>
+                <%= link_to new_company_path, class: 'btn btn-outline-primary btn-sm' do %>
+                  <i class="fas fa-plus"></i> Add
+                <% end %>
+              </div>
+              <% if (@companies || []).empty? %>
+                <div class="form-text">Add buyer companies to fill this form in one click.</div>
+              <% end %>
+              <%= f.hidden_field :buyer_company_id, id: 'invoice_buyer_company_id' %>
+            </div>
+            <div class="col-md-6">
+              <%= f.input :buyer_name, label: 'Buyer business name',
+                  input_html: { class: 'form-control', id: 'invoice_buyer_name', placeholder: 'Company or individual name' },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
+            <div class="col-md-6">
+              <%= f.input :buyer_ntn, label: 'Buyer NTN / CNIC',
+                  input_html: { class: 'form-control', id: 'invoice_buyer_ntn', placeholder: 'e.g. 1234567-8' },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+              <button type="button" class="btn btn-sm btn-outline-secondary mt-1" id="verify-buyer-ntn">Verify with FBR</button>
+              <small id="buyer-ntn-status" class="d-block text-muted mt-1"></small>
+            </div>
+            <div class="col-md-6">
+              <%= f.input :buyer_province, label: 'Province',
+                  collection: %w[Punjab Sindh KPK Balochistan ICT AJK GB],
+                  include_blank: false,
+                  input_html: { id: 'invoice_buyer_province' },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
+            <div class="col-md-6">
+              <%= f.input :buyer_registration_type, label: 'Registration type',
+                  collection: ['Registered', 'Unregistered'],
+                  include_blank: false,
+                  input_html: { id: 'invoice_buyer_registration_type' },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            <div class="col-12">
+              <%= f.input :buyer_address, label: 'Buyer address', as: :text,
+                  input_html: { class: 'form-control', id: 'invoice_buyer_address', rows: 2, placeholder: 'Full business address' },
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Line items -->
+      <section class="invoice-form-section-card" id="section-items">
+        <div class="invoice-form-section-card__header invoice-form-section-card__header--split">
+          <div class="d-flex align-items-center gap-3">
+            <div class="invoice-form-section-card__step">3</div>
+            <div>
+              <h2 class="invoice-form-section-card__title">Line items</h2>
+              <p class="invoice-form-section-card__hint">Add products or services — totals update automatically</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="add-item-btn" data-action="invoice-form#addItem">
+            <i class="fas fa-plus"></i> Add item
+          </button>
+        </div>
+        <div class="invoice-form-section-card__body invoice-form-section-card__body--items">
+          <div id="invoice-items" class="invoice-form-items">
+            <%= f.simple_fields_for :items do |item| %>
+              <%= render 'item_fields', f: item %>
+            <% end %>
+          </div>
+
+          <div id="no-items" class="invoice-form-empty <%= @invoice.items.reject { |i| i.marked_for_destruction? }.any? ? 'd-none' : '' %>">
+            <div class="invoice-form-empty__icon"><i class="fas fa-cart-plus"></i></div>
+            <h3>No items yet</h3>
+            <p>Click <strong>Add item</strong> to add your first product or service.</p>
+            <button type="button" class="btn btn-outline-primary btn-sm invoice-form-empty__cta" data-action="invoice-form#addItem">
+              <i class="fas fa-plus"></i> Add first item
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+      <div class="invoice-form-sidebar">
+        <div class="invoice-form-summary">
+          <h3 class="invoice-form-summary__title"><i class="fas fa-receipt"></i> Summary</h3>
+          <div class="invoice-form-summary__rows">
+            <div class="invoice-form-summary__row">
+              <span>Net amount</span>
+              <strong id="net-amount">Rs. 0.00</strong>
+            </div>
+            <div class="invoice-form-summary__row">
+              <span>Sales tax</span>
+              <strong id="tax-amount">Rs. 0.00</strong>
+            </div>
+            <div class="invoice-form-summary__row invoice-form-summary__row--total">
+              <span>Grand total</span>
+              <strong id="total-amount">Rs. 0.00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="invoice-form-sidebar-card">
+          <% if current_user.production_fbr_environment? %>
+            <label class="form-label fw-semibold">
+              <i class="fas fa-industry text-danger"></i> Production mode
+            </label>
+            <p class="invoice-form-sidebar-hint mb-0">
+              Sandbox scenario IDs are not used in Production. Invoices submit to the live FBR API.
+            </p>
+            <%= f.hidden_field :scenario_id, value: nil %>
+          <% else %>
+            <label class="form-label fw-semibold" for="invoice_scenario_id">
+              <i class="fas fa-flask text-primary"></i> Sandbox scenario
+            </label>
+            <%= f.input :scenario_id,
+                label: false,
+                collection: FbrScenario::SCENARIOS.map { |id, name| [name, id] },
+                selected: f.object.scenario_id.presence || Invoice::DEFAULT_SCENARIO_ID,
+                include_blank: false,
+                input_html: { class: 'form-select', id: 'invoice_scenario_id' },
+                wrapper_html: { class: 'mb-0' } %>
+            <p class="invoice-form-sidebar-hint">Default: goods at standard rate to registered buyers (SN001).</p>
+          <% end %>
+        </div>
+
+        <div class="invoice-form-sidebar-actions">
+          <%= f.button :submit, (@invoice.persisted? ? 'Update invoice' : 'Save invoice'),
+              class: 'btn btn-primary btn-lg w-100',
+              data: { disable_with: 'Saving…' } %>
+          <%= link_to 'Cancel', (@invoice.persisted? ? invoice_path(@invoice) : invoices_path), class: 'btn btn-outline-secondary w-100' %>
+        </div>
+
+        <% if local_assigns[:show_fbr_actions] %>
+          <%= render 'fbr_actions_panel', invoice: @invoice %>
+        <% end %>
+
+        <div class="invoice-form-sidebar-tip">
+          <i class="fas fa-lightbulb"></i>
+          <% if local_assigns[:show_fbr_actions] %>
+            <p>After saving, use <strong>FBR submission</strong> above to validate and send this invoice.</p>
+          <% else %>
+            <p>Save as draft first, then validate and submit to FBR from the invoice page.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<template id="item-fields-template">
+  <div class="invoice-form-item invoice-item" data-item-index="new">
+    <div class="invoice-form-item__header">
+      <div class="invoice-form-item__title">
+        <span class="invoice-form-item__badge item-number">1</span>
+        <span class="invoice-form-item__label">Line item</span>
+      </div>
+      <div class="invoice-form-item__actions">
+        <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>
+    <div class="invoice-form-item__body">
+      <div class="invoice-form-field-group">
+        <p class="invoice-form-field-group__label"><i class="fas fa-box"></i> Product</p>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Product description <span class="text-danger">*</span></label>
+            <input type="text" name="invoice[items_attributes][INDEX][description]" class="form-control" required placeholder="e.g. Wooden plates">
+          </div>
+          <div class="col-md-6">
+            <div class="invoice-hs-code-combobox invoice-form-input mb-0"
+                 data-controller="invoice-hs-code"
+                 data-invoice-hs-code-url-value="<%= search_hs_codes_api_v1_reference_data_path(format: :json) %>">
+              <label class="form-label">HS Code</label>
+              <input type="hidden"
+                     name="invoice[items_attributes][INDEX][hs_code]"
+                     class="hs-code-field"
+                     data-invoice-hs-code-target="hidden">
+              <input type="text"
+                     class="form-control"
+                     placeholder="Type 2+ characters to search"
+                     autocomplete="off"
+                     data-invoice-hs-code-target="input"
+                     data-action="input->invoice-hs-code#search focus->invoice-hs-code#onFocus blur->invoice-hs-code#onBlur keydown->invoice-hs-code#keydown">
+              <div class="invoice-hs-code-results" data-invoice-hs-code-target="results" hidden></div>
+              <div class="form-text">Type at least 2 characters to search FBR codes.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="invoice-form-field-group">
+        <p class="invoice-form-field-group__label"><i class="fas fa-calculator"></i> Quantity &amp; pricing</p>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Quantity <span class="text-danger">*</span></label>
+            <input type="number" name="invoice[items_attributes][INDEX][quantity]" class="form-control item-quantity" step="0.01" min="0" required placeholder="0">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Unit of measure</label>
+            <select name="invoice[items_attributes][INDEX][uom]" class="form-control uom-select">
+              <option value="">Select UOM</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Unit price (Rs.) <span class="text-danger">*</span></label>
+            <input type="number" name="invoice[items_attributes][INDEX][unit_price]" class="form-control item-unit-price" step="0.01" min="0" required placeholder="0.00">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Line total (excl. tax)</label>
+            <input type="number" name="invoice[items_attributes][INDEX][total_value]" class="form-control item-total-price bg-light" step="0.01" readonly>
+          </div>
+        </div>
+      </div>
+      <div class="invoice-form-field-group invoice-form-field-group--last">
+        <p class="invoice-form-field-group__label"><i class="fas fa-percent"></i> Tax &amp; FBR fields</p>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Tax rate (%)</label>
+            <input type="number" name="invoice[items_attributes][INDEX][tax_rate]" class="form-control item-tax-rate" step="0.01" min="0" max="100" value="18">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Sales tax (Rs.)</label>
+            <input type="number" name="invoice[items_attributes][INDEX][sales_tax]" class="form-control item-tax-amount bg-light" step="0.01" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Sale type</label>
+            <select name="invoice[items_attributes][INDEX][sale_type]" class="form-control sale-type-select">
+              <option value="Goods at standard rate (default)" selected>Goods at standard rate (default)</option>
+              <option value="Services">Services</option>
+            </select>
+          </div>
+          <input type="hidden" name="invoice[items_attributes][INDEX][sro_schedule_no]" value="">
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<% content_for :head do %>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_green.css">
+<% end %>

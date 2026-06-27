@@ -1,0 +1,45 @@
+<%# locals: collection, form_path:, per_options: [25, 50, 100], extra_params: {}, item_label: 'results' %>
+<% return unless collection.respond_to?(:total_pages) && collection.total_count.positive? %>
+
+<% form_path ||= request.path %>
+<% per_options ||= [25, 50, 100] %>
+<% extra_params = local_assigns.fetch(:extra_params, {}) %>
+<% item_label = local_assigns.fetch(:item_label, 'results') %>
+<% current_per = (params[:per].presence || per_options.first).to_i %>
+<% paginate_params = extra_params.merge(per: params[:per].presence).compact %>
+
+<div class="fbr-pagination-footer">
+  <div class="fbr-pagination-footer__summary">
+    <span class="fbr-pagination-footer__label">Showing</span>
+    <strong><%= collection.offset_value + 1 %></strong>
+    <span class="text-muted">–</span>
+    <strong><%= [collection.offset_value + collection.length, collection.total_count].min %></strong>
+    <span class="fbr-pagination-footer__label">of</span>
+    <strong><%= collection.total_count %></strong>
+    <span class="fbr-pagination-footer__label"><%= item_label %></span>
+    <% if collection.total_pages > 1 %>
+      <span class="fbr-pagination-footer__pages text-muted">· Page <%= collection.current_page %> of <%= collection.total_pages %></span>
+    <% end %>
+  </div>
+
+  <div class="fbr-pagination-footer__controls">
+    <% if per_options.size > 1 %>
+      <%= form_with url: form_path, method: :get, local: true, class: 'fbr-pagination-footer__per' do |f| %>
+        <% extra_params.each do |key, value| %>
+          <%= hidden_field_tag key, value %>
+        <% end %>
+        <%= hidden_field_tag :page, 1 %>
+        <label for="pagination_per_<%= collection.object_id %>" class="fbr-pagination-footer__per-label">Show</label>
+        <%= select_tag :per,
+            options_for_select(per_options.map { |n| [n, n] }, current_per),
+            id: "pagination_per_#{collection.object_id}",
+            class: 'form-select form-select-sm fbr-pagination-footer__select',
+            onchange: 'this.form.submit()' %>
+      <% end %>
+    <% end %>
+
+    <% if collection.total_pages > 1 %>
+      <%= paginate collection, params: paginate_params %>
+    <% end %>
+  </div>
+</div>

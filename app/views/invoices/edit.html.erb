@@ -1,0 +1,9 @@
+<div class="invoice-form-page">
+  <%= render 'form_header',
+      title: 'Edit Invoice',
+      subtitle: "Update invoice #{@invoice.invoice_number}",
+      back_path: invoice_path(@invoice),
+      back_label: 'Back to invoice' %>
+
+  <%= render 'form', invoice: @invoice, show_fbr_actions: true %>
+</div>

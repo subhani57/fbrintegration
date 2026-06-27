@@ -1,0 +1,179 @@
+<div class="container-fluid dashboard-page">
+  <div class="fbr-page-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 mb-0">
+        <i class="fas fa-tachometer-alt text-primary"></i> Dashboard
+      </h1>
+      <p class="text-muted mb-0">Welcome back, <%= current_user.business_name.presence || current_user.email %></p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <%= link_to reports_path, class: 'btn btn-outline-primary' do %>
+        <i class="fas fa-chart-bar"></i> Reports
+      <% end %>
+      <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
+        <i class="fas fa-plus"></i> New Invoice
+      <% end if current_user.can_manage_invoices? %>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-3">
+      <div class="card fbr-stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="text-muted mb-1">Today's Invoices</h6>
+              <h3 class="mb-0 text-primary" data-fbr-count="<%= @today_invoices.count %>"><%= @today_invoices.count %></h3>
+              <p class="text-muted small mb-0 mt-2"><%= format_pkr(@today_total) %></p>
+            </div>
+            <div class="fbr-stat-icon"><i class="fas fa-file-invoice"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <div class="card fbr-stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="text-muted mb-1">This Month</h6>
+              <h3 class="mb-0 text-primary" data-fbr-count="<%= @month_invoices.count %>"><%= @month_invoices.count %></h3>
+              <p class="text-muted small mb-0 mt-2"><%= format_pkr(@month_total) %></p>
+            </div>
+            <div class="fbr-stat-icon"><i class="fas fa-calendar-alt"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <div class="card fbr-stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="text-muted mb-1">Tax This Month</h6>
+              <h3 class="mb-0"><%= format_pkr(@month_tax) %></h3>
+              <p class="text-muted small mb-0 mt-2">Sales tax collected</p>
+            </div>
+            <div class="fbr-stat-icon" style="background: linear-gradient(135deg, #20c997, #157347);">
+              <i class="fas fa-percentage"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <div class="card fbr-stat-card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h6 class="text-muted mb-1">FBR Submitted</h6>
+              <h3 class="mb-0" data-fbr-count="<%= @fbr_submitted_count %>"><%= @fbr_submitted_count %></h3>
+              <p class="small mb-0 mt-2">
+                <% if @fbr_configured %>
+                  <span class="text-success"><i class="fas fa-check-circle"></i> FBR token active</span>
+                <% else %>
+                  <%= link_to profile_path, class: 'text-warning text-decoration-none' do %>
+                    <i class="fas fa-exclamation-triangle"></i> Configure business &amp; FBR settings
+                  <% end %>
+                <% end %>
+              </p>
+            </div>
+            <div class="fbr-stat-icon" style="background: linear-gradient(135deg, #0f5132, #157347);">
+              <i class="fas fa-shield-alt"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <div class="card h-100">
+        <div class="card-header bg-white">
+          <h6 class="card-title mb-0"><i class="fas fa-chart-line text-primary"></i> Invoice Trend (Last 30 Days)</h6>
+        </div>
+        <div class="card-body"
+             data-controller="dashboard-chart"
+             data-dashboard-chart-labels-value="<%= @daily_chart_data.keys.map { |d| d.strftime('%d %b') }.to_json %>"
+             data-dashboard-chart-values-value="<%= @daily_chart_data.values.to_json %>">
+          <canvas data-dashboard-chart-target="canvas" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header bg-white">
+          <h6 class="card-title mb-0"><i class="fas fa-users text-primary"></i> Top Buyers (This Month)</h6>
+        </div>
+        <div class="card-body">
+          <% if @top_customers.any? %>
+            <ul class="list-group list-group-flush">
+              <% @top_customers.each do |customer, amount| %>
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                  <span class="text-truncate me-2" style="max-width: 55%;"><%= customer.presence || 'Unknown' %></span>
+                  <span class="badge bg-primary rounded-pill"><%= format_pkr(amount) %></span>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <p class="text-muted text-center mb-0 py-4">No buyer data for this month yet.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h6 class="card-title mb-0"><i class="fas fa-history text-primary"></i> Recent Invoices</h6>
+      <%= link_to 'View all', invoices_path, class: 'btn btn-sm btn-outline-primary' %>
+    </div>
+    <div class="card-body p-0">
+      <% if @recent_invoices.any? %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Invoice #</th>
+                <th>Date</th>
+                <th>Buyer</th>
+                <th class="text-end">Amount</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @recent_invoices.each do |invoice| %>
+                <tr>
+                  <td><%= link_to invoice.invoice_number, invoice_path(invoice), class: 'text-decoration-none fw-semibold' %></td>
+                  <td><%= invoice.invoice_date.strftime('%d %b %Y') %></td>
+                  <td><%= invoice.buyer_name.presence || '—' %></td>
+                  <td class="text-end"><%= format_pkr(invoice.total_amount) %></td>
+                  <td><%= render 'shared/status_badge', status: invoice.status %></td>
+                  <td class="text-end">
+                    <%= link_to invoice_path(invoice), class: 'btn btn-sm btn-outline-primary', title: 'View' do %>
+                      <i class="fas fa-eye"></i>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="text-center py-5">
+          <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+          <p class="text-muted mb-3">No invoices yet. Create your first invoice to see stats here.</p>
+          <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
+            <i class="fas fa-plus"></i> Create Invoice
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

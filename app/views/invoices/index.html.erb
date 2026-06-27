@@ -1,0 +1,37 @@
+<div class="row">
+  <div class="col-12">
+    <div class="fbr-page-header d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="mb-0"><i class="fas fa-file-invoice text-primary"></i> Invoices</h2>
+        <% if @invoices.respond_to?(:total_count) && @invoices.total_count.positive? %>
+          <p class="text-muted small mb-0 mt-1"><%= @invoices.total_count %> invoice<%= @invoices.total_count == 1 ? '' : 's' %> total</p>
+        <% end %>
+      </div>
+      <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
+        <i class="fas fa-plus"></i> New Invoice
+      <% end if current_user.can_manage_invoices? %>
+    </div>
+
+    
+    <% if @invoices.any? %>
+      <% if current_user.can_manage_invoices? %>
+        <%= form_with url: bulk_submit_invoices_path, method: :post, local: true, id: 'bulk-submit-form' do %>
+          <%= render 'invoices/index_table', invoices: @invoices, bulk_select: true %>
+        <% end %>
+      <% else %>
+        <%= render 'invoices/index_table', invoices: @invoices, bulk_select: false %>
+      <% end %>
+    <% else %>
+      <div class="card fbr-empty-state">
+        <div class="card-body py-5">
+          <i class="fas fa-file-invoice fa-4x mb-3"></i>
+          <h4 class="text-muted">No invoices yet</h4>
+          <p class="text-muted mb-4">Create your first invoice to get started</p>
+          <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
+            <i class="fas fa-plus"></i> Create Invoice
+          <% end if current_user.can_manage_invoices? %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

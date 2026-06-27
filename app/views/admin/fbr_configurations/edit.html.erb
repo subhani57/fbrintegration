@@ -1,0 +1,121 @@
+<div class="mb-4">
+  <%= link_to admin_fbr_configurations_path, class: 'btn btn-sm btn-outline-secondary mb-3' do %>
+    <i class="fas fa-arrow-left"></i> Back to FBR Configurations
+  <% end %>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="fbr-page-header mb-1"><i class="fas fa-cogs text-primary"></i> FBR Settings</h1>
+      <p class="text-muted mb-0">
+        <%= link_to @user.email, admin_user_path(@user), class: 'text-decoration-none' %>
+        <% if @user.business_name.present? %>
+          · <%= @user.business_name %>
+        <% end %>
+      </p>
+    </div>
+    <%= link_to admin_user_path(@user), class: 'btn btn-outline-secondary btn-sm' do %>
+      <i class="fas fa-user"></i> View profile
+    <% end %>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <% FbrConfiguration::ENVIRONMENTS.each do |environment| %>
+    <% config = @configs_by_environment[environment] %>
+    <div class="col-md-6">
+      <div class="card h-100 <%= @user.default_fbr_environment == environment ? 'border-primary' : '' %>">
+        <div class="card-body py-3 d-flex align-items-center justify-content-between">
+          <div>
+            <%= fbr_environment_badge(environment) %>
+            <% if @user.default_fbr_environment == environment %>
+              <span class="badge bg-success ms-1">Active</span>
+            <% end %>
+            <div class="small text-muted mt-1">Submission token</div>
+          </div>
+          <%= fbr_admin_token_status(config, compact: true) %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <%= form_with url: admin_fbr_configuration_path(@user), method: :patch, local: true do |f| %>
+      <% if @fbr_errors.present? %>
+        <div class="alert alert-danger mb-4">
+          <i class="fas fa-exclamation-circle me-2"></i>
+          <%= @fbr_errors.join(", ") %>
+        </div>
+      <% end %>
+
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">
+          <i class="fas fa-bolt text-primary me-2"></i> Active environment for submissions
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Choose which token is used when this user validates or submits invoices.
+          </p>
+          <%= render 'shared/fbr_preferred_environment',
+              user: @user,
+              embedded: true,
+              form_path_helper: ->(environment) { preferred_fbr_environment_admin_user_path(@user, environment: environment) } %>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header fw-semibold">
+          <i class="fas fa-key text-primary me-2"></i> FBR API tokens
+        </div>
+        <div class="card-body">
+          <% FbrConfiguration::ENVIRONMENTS.each_with_index do |environment, index| %>
+            <% config = @configs_by_environment[environment] %>
+            <div class="<%= index < FbrConfiguration::ENVIRONMENTS.length - 1 ? 'mb-4 pb-4 border-bottom' : 'mb-0' %>">
+              <div class="d-flex align-items-center gap-2 mb-3">
+                <%= fbr_environment_badge(environment) %>
+                <%= fbr_admin_token_status(config, compact: true) %>
+              </div>
+              <label class="form-label" for="fbr_configurations_<%= environment %>_token">
+                FBR Security Token
+              </label>
+              <input type="text"
+                     name="fbr_configurations[<%= environment %>][token]"
+                     id="fbr_configurations_<%= environment %>_token"
+                     class="form-control font-monospace"
+                     autocomplete="off"
+                     placeholder="<%= config.token_configured? ? 'Enter new token to replace existing' : 'Paste FBR API token' %>"
+                     value="">
+              <% if config.token_configured? %>
+                <div class="form-text text-success">
+                  <i class="fas fa-check-circle"></i> Token configured — leave blank to keep the current token.
+                </div>
+              <% else %>
+                <div class="form-text">From FBR IRIS → Digital Invoicing for the <%= environment.humanize %> environment.</div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+        <%= f.submit 'Save FBR Settings', class: 'btn btn-primary' %>
+        <%= link_to 'Cancel', admin_fbr_configurations_path, class: 'btn btn-outline-secondary' %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-primary">
+      <div class="card-body">
+        <h6 class="card-title text-primary mb-3"><i class="fas fa-info-circle"></i> How this works</h6>
+        <ul class="small text-muted mb-0 ps-3">
+          <li class="mb-2">Each taxpayer has one sandbox token and one production token on this page.</li>
+          <li class="mb-2">The <strong>active environment</strong> decides which token is used for invoice submission.</li>
+          <li class="mb-2">Leave a token field blank to keep the existing value.</li>
+          <li>Sandbox test invoices always use the sandbox token.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

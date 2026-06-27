@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin — FBR Digital Invoicing</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <%= stylesheet_link_tag 'application', media: 'all' %>
+  <%= yield :head %>
+</head>
+<body class="fbr-app admin-portal">
+  <nav class="navbar navbar-dark navbar-fbr">
+    <div class="container-fluid">
+      <%= link_to admin_dashboard_path, class: 'navbar-brand' do %>
+        <i class="fas fa-shield-alt"></i> FBR Admin Portal
+      <% end %>
+      <div class="d-flex align-items-center gap-3">
+        <span class="text-white-50 small d-none d-md-inline">
+          <i class="fas fa-user-shield"></i> <%= current_user.email %>
+        </span>
+        <%= button_to destroy_user_session_path, method: :delete, class: 'btn btn-outline-light btn-sm' do %>
+          <i class="fas fa-sign-out-alt"></i> Logout
+        <% end %>
+      </div>
+    </div>
+  </nav>
+
+  <%= render "shared/flash_messages" %>
+
+  <div class="container-fluid">
+    <div class="row">
+      <aside class="col-md-3 col-lg-2 admin-sidebar py-4">
+        <nav class="nav flex-column admin-nav">
+          <%= link_to admin_dashboard_path, class: "nav-link #{'active' if controller_name == 'dashboard'}" do %>
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+          <% end %>
+          <%= link_to admin_users_path, class: "nav-link #{'active' if controller_name == 'users'}" do %>
+            <i class="fas fa-users"></i> Users
+          <% end %>
+          <%= link_to admin_invoices_path, class: "nav-link #{'active' if controller_name == 'invoices'}" do %>
+            <i class="fas fa-file-invoice"></i> All Invoices
+          <% end %>
+          <%= link_to admin_fbr_configurations_path, class: "nav-link #{'active' if controller_name == 'fbr_configurations'}" do %>
+            <i class="fas fa-cogs"></i> FBR Configurations
+          <% end %>
+          <%= link_to admin_reports_path, class: "nav-link #{'active' if controller_name == 'reports'}" do %>
+            <i class="fas fa-chart-bar"></i> Reports
+          <% end %>
+          <%= link_to admin_fbr_logs_path, class: "nav-link #{'active' if controller_name == 'fbr_logs'}" do %>
+            <i class="fas fa-list"></i> FBR API Logs
+          <% end %>
+          <hr class="border-secondary opacity-25 my-2">
+          <%= link_to sidekiq_web_path, class: 'nav-link', target: '_blank' do %>
+            <i class="fas fa-tasks"></i> Sidekiq
+          <% end %>
+        </nav>
+        <div class="admin-sidebar-note mt-4 px-3">
+          <p class="small text-muted mb-0">
+            <i class="fas fa-info-circle"></i>
+            Admins manage the system. Taxpayers create and submit invoices.
+          </p>
+        </div>
+      </aside>
+      <main class="col-md-9 col-lg-10 admin-main py-4 fbr-main-content">
+        <%= yield %>
+      </main>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <%= javascript_importmap_tags %>
+</body>
+</html>

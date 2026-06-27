@@ -1,0 +1,143 @@
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1 class="fbr-page-header mb-1"><%= @user.email %></h1>
+    <span class="badge bg-<%= @user.admin? ? 'dark' : 'primary' %>"><%= @user.role %></span>
+  </div>
+  <div class="d-flex gap-2">
+    <% if @user.taxpayer? %>
+      <% all_sandbox_done = @pending_sandbox_scenarios.blank? %>
+      <% test_invoices_blocked = @sandbox_test_blocked_reason.present? %>
+      <%= button_to send_test_fbr_invoices_admin_user_path(@user),
+          method: :post,
+          class: 'btn btn-outline-warning',
+          disabled: all_sandbox_done || test_invoices_blocked,
+          form: {
+            data: {
+              turbo_confirm: (all_sandbox_done || test_invoices_blocked) ? nil : "Send #{@pending_sandbox_scenarios.size} sandbox test invoice(s) (#{@pending_sandbox_scenarios.join(', ')}) to FBR sandbox? Already completed scenarios will be skipped."
+            }
+          },
+          data: { disable_with: 'Sending…' } do %>
+        <i class="fas fa-flask"></i>
+        <% if test_invoices_blocked %>
+          Test Invoices Unavailable
+        <% elsif all_sandbox_done %>
+          All Test Scenarios Sent
+        <% else %>
+          Send Test Invoices (<%= @pending_sandbox_scenarios.size %> pending)
+        <% end %>
+      <% end %>
+    <% end %>
+    <% unless @user.approved? %>
+      <%= button_to approve_admin_user_path(@user), method: :patch, class: 'btn btn-success' do %>
+        <i class="fas fa-check"></i> Approve account
+      <% end %>
+    <% end %>
+    <%= link_to edit_admin_user_path(@user), class: 'btn btn-primary' do %>
+      <i class="fas fa-edit"></i> Edit User
+    <% end %>
+    <%= link_to admin_users_path, class: 'btn btn-outline-secondary' do %>
+      <i class="fas fa-arrow-left"></i> Back
+    <% end %>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card mb-4">
+      <div class="card-header"><strong>Profile</strong></div>
+      <div class="card-body">
+        <p><strong>NTN/CNIC:</strong> <%= @user.ntn_cnic.presence || '—' %></p>
+        <p><strong>Business:</strong> <%= @user.business_name.presence || '—' %></p>
+        <p class="mb-0"><strong>Address:</strong> <%= @user.address.presence || '—' %></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card mb-4">
+      <div class="card-header"><strong>FBR Configuration</strong></div>
+      <div class="card-body">
+        <% if @user.taxpayer? %>
+          <%= render 'shared/fbr_preferred_environment',
+              user: @user,
+              form_path_helper: ->(environment) { preferred_fbr_environment_admin_user_path(@user, environment: environment) } %>
+
+          <% configs_by_env = @user.fbr_configurations.index_by(&:environment) %>
+          <div class="d-flex flex-wrap gap-3 mb-3">
+            <% FbrConfiguration::ENVIRONMENTS.each do |environment| %>
+              <% cfg = configs_by_env[environment] %>
+              <div>
+                <%= fbr_environment_badge(environment) %>
+                <span class="ms-1"><%= fbr_admin_token_status(cfg) %></span>
+              </div>
+            <% end %>
+          </div>
+
+          <%= link_to edit_admin_fbr_configuration_path(@user), class: 'btn btn-sm btn-outline-primary' do %>
+            <i class="fas fa-cogs"></i> Manage FBR tokens
+          <% end %>
+        <% end %>
+      </div>
+      <% if @user.taxpayer? %>
+        <div class="card-footer small text-muted">
+          <i class="fas fa-flask me-1"></i>
+          <strong>Send Test Invoices</strong> posts one sandbox invoice per scenario (SN001, SN002, SN005–SN008) to the <strong>sandbox</strong> API only. Each scenario is sent once — repeats are skipped. Not available when Production is the active environment.
+          <% if @sandbox_test_blocked_reason.present? %>
+            <span class="text-danger d-block mt-1">
+              <i class="fas fa-ban"></i> <%= @sandbox_test_blocked_reason %>
+            </span>
+          <% end %>
+          <% if @completed_sandbox_scenarios.present? %>
+            <div class="mt-1">
+              <span class="text-success"><i class="fas fa-check-circle"></i> Completed:</span>
+              <%= @completed_sandbox_scenarios.join(', ') %>
+            </div>
+          <% end %>
+          <% if @pending_sandbox_scenarios.present? %>
+            <div class="mt-1">
+              <span class="text-warning"><i class="fas fa-clock"></i> Pending:</span>
+              <%= @pending_sandbox_scenarios.join(', ') %>
+            </div>
+          <% end %>
+          <% unless @sandbox_config&.token_configured? %>
+            <% unless @sandbox_test_blocked_reason.to_s.include?('Sandbox FBR token') %>
+              <span class="text-warning d-block mt-1">
+                <i class="fas fa-exclamation-triangle"></i> Configure the sandbox token first.
+              </span>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Recent Invoices</strong>
+        <% if @user.taxpayer? %>
+          <%= link_to 'View all', admin_invoices_path(user_id: @user.id), class: 'btn btn-sm btn-outline-primary' %>
+        <% end %>
+      </div>
+      <div class="card-body p-0">
+        <% if @user.admin? %>
+          <p class="p-3 text-muted mb-0 small">Admin accounts do not create invoices.</p>
+        <% elsif @invoices.any? %>
+          <table class="table table-sm mb-0">
+            <thead><tr><th>#</th><th>Date</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+              <% @invoices.each do |inv| %>
+                <tr>
+                  <td><%= inv.invoice_number %></td>
+                  <td><%= inv.invoice_date %></td>
+                  <td><%= inv.status %></td>
+                  <td><%= link_to 'View', admin_invoice_path(inv), class: 'btn btn-xs btn-outline-primary btn-sm' %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        <% else %>
+          <p class="p-3 text-muted mb-0">No invoices yet.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
