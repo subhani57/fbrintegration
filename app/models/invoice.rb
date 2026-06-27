@@ -85,14 +85,11 @@ class Invoice < ApplicationRecord
   before_validation :assign_pdf_invoice_number, on: :create
   before_save :calculate_totals
   after_update_commit :broadcast_show_page_refresh_after_fbr_processing
-  # after_save :update_dashboard_stats
 
   # Scopes
   scope :today, -> { where(invoice_date: Date.today) }
   scope :this_month, -> { where(invoice_date: Date.today.beginning_of_month..Date.today.end_of_month) }
-  scope :this_year, -> { where(invoice_date: Date.today.beginning_of_year..Date.today.end_of_year) }
   scope :submitted, -> { where(fbr_status: 'submitted') }
-  scope :approved, -> { where(status: 'approved') }
   scope :failed, -> { where(status: 'failed') }
   scope :by_date_range, ->(start_date, end_date) { where(invoice_date: start_date..end_date) }
 
@@ -116,16 +113,6 @@ class Invoice < ApplicationRecord
     end.max || 0
 
     "#{date_prefix}-#{format('%04d', max_seq + 1)}"
-  end
-
-  def self.generate_number(user = nil)
-    user ? next_sequence_number_for(user) : legacy_generate_number
-  end
-
-  def self.legacy_generate_number
-    date_prefix = Date.today.strftime('%Y%m%d')
-    last_number = where("invoice_number LIKE ?", "#{date_prefix}-%").count
-    "#{date_prefix}-#{format('%04d', last_number + 1)}"
   end
 
   # Instance Methods
@@ -206,10 +193,6 @@ class Invoice < ApplicationRecord
     PdfGenerator.new(self).generate
   end
 
-  def fbr_on_iris?
-    fbr_invoice_id.present? && fbr_status == 'submitted' && !cancelled?
-  end
-
   def iris_cancelled?
     cancelled? && fbr_status == 'cancelled'
   end
@@ -256,10 +239,6 @@ class Invoice < ApplicationRecord
 
   def original_invoice_fbr_number
     original_invoice&.fbr_invoice_id
-  end
-
-  def update_dashboard_stats
-    # DashboardStats.update_for_user(user) if defined?(DashboardStats)
   end
 
   def broadcast_show_page_refresh_after_fbr_processing
@@ -353,10 +332,6 @@ class Invoice < ApplicationRecord
   rescue AASM::InvalidTransition => e
     AppLogger.info('invoice.validate_transition_invalid', invoice_id: id, message: e.message)
     false
-  end
-
-  def safely_mark_validated
-    safely_mark_validated!
   end
 
   def notify_submission_success!

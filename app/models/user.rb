@@ -52,10 +52,6 @@ class User < ApplicationRecord
     end
   end
 
-  def active_configuration(environment = default_fbr_environment)
-    configuration_for(environment)
-  end
-
   def default_fbr_environment
     preferred_fbr_environment.presence || (Rails.env.production? ? 'production' : 'sandbox')
   end
@@ -76,10 +72,6 @@ class User < ApplicationRecord
 
   def can_access_taxpayer_portal?
     taxpayer? || viewer?
-  end
-
-  def onboarding_complete?
-    onboarding_step >= 3
   end
 
   def advance_onboarding!

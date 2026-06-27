@@ -17,11 +17,10 @@ Rails.application.routes.draw do
   post 'onboarding/skip', to: 'onboarding#skip', as: :skip_onboarding
 
   resources :notifications, only: [:index] do
-    member { patch :mark_read }
     collection { patch :mark_all_read }
   end
 
-  resources :webhooks
+  resources :webhooks, except: [:show]
   resources :invoice_templates, only: [:index, :destroy]
   
   resources :invoices do
@@ -34,7 +33,6 @@ Rails.application.routes.draw do
       post :mark_cancelled_on_iris
       get :status
       get :download_pdf
-      get :download_xml
     end
     collection do
       post :bulk_submit

@@ -1,6 +1,5 @@
 # app/models/fbr_scenario.rb
 class FbrScenario < ApplicationRecord
-  # Based on Section 9 & 10 of the document
   SCENARIOS = {
     'SN001' => 'Goods at standard rate to registered buyers',
     'SN002' => 'Goods at standard rate to unregistered buyers',
@@ -31,19 +30,4 @@ class FbrScenario < ApplicationRecord
     'SN027' => 'Sale to End Consumer by retailers (3rd Schedule Goods)',
     'SN028' => 'Sale to End Consumer by retailers (Reduced Rate)'
   }.freeze
-  
-  BUSINESS_SCENARIOS = {
-    'Manufacturer' => {
-      'All Other Sectors' => ['SN001', 'SN002', 'SN005', 'SN006', 'SN007', 'SN015', 'SN016', 'SN017', 'SN021', 'SN022', 'SN024'],
-      'Steel' => ['SN003', 'SN004', 'SN011'],
-      'FMCG' => ['SN001', 'SN002', 'SN005', 'SN006', 'SN007', 'SN015', 'SN016', 'SN017', 'SN021', 'SN022', 'SN024', 'SN008']
-    },
-    'Retailer' => {
-      'All Other Sectors' => ['SN001', 'SN002', 'SN005', 'SN006', 'SN007', 'SN015', 'SN016', 'SN017', 'SN021', 'SN022', 'SN024', 'SN026', 'SN027', 'SN028', 'SN008']
-    }
-  }.freeze
-  
-  def self.for_business(business_nature, sector)
-    BUSINESS_SCENARIOS.dig(business_nature, sector) || ['SN001', 'SN002']
-  end
 end

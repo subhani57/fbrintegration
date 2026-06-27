@@ -58,10 +58,6 @@ class InvoicePolicy < ApplicationPolicy
     owner_or_viewer?
   end
 
-  def download_xml?
-    owner_or_viewer?
-  end
-
   def bulk_submit?
     user&.can_manage_invoices?
   end

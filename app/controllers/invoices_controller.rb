@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 class InvoicesController < ApplicationController
-  include InvoiceGuard
   include FbrSubmissionGuard
 
   before_action :authenticate_user!
   before_action :redirect_admin_from_taxpayer_portal!
   before_action :ensure_taxpayer_portal!
   before_action :ensure_taxpayer!, only: [:new, :create, :edit, :update, :destroy, :submit, :validate, :bulk_submit, :cancel, :save_template]
-  before_action :set_invoice, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :download_pdf, :download_xml, :cancel, :save_template, :sync_from_iris, :mark_cancelled_on_iris]
+  before_action :set_invoice, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :download_pdf, :cancel, :save_template, :sync_from_iris, :mark_cancelled_on_iris]
   before_action :load_buyer_companies, only: [:new, :create, :edit, :update]
   before_action :load_submitted_invoices, only: [:new, :create, :edit, :update]
   before_action :authorize_invoice!, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :cancel, :save_template, :sync_from_iris, :mark_cancelled_on_iris]
@@ -42,11 +41,6 @@ class InvoicesController < ApplicationController
     end
 
     @invoices = @invoices.page(params[:page]).per(per_page)
-
-    respond_to do |format|
-      format.html
-      format.json { render json: @invoices }
-    end
   end
 
   def show
@@ -59,7 +53,6 @@ class InvoicesController < ApplicationController
           type: 'application/pdf',
           disposition: 'inline'
       end
-      format.json { render json: @invoice }
     end
   end
 
@@ -272,13 +265,6 @@ class InvoicesController < ApplicationController
       disposition: 'attachment'
   end
 
-  def download_xml
-    send_data @invoice.to_json,
-      filename: "invoice-#{@invoice.invoice_number}.json",
-      type: 'application/json',
-      disposition: 'attachment'
-  end
-
   private
 
   def set_invoice
@@ -306,7 +292,7 @@ class InvoicesController < ApplicationController
   end
 
   def ensure_editable
-    return unless fbr_locked?(@invoice)
+    return unless @invoice.fbr_locked?
 
     redirect_to @invoice, alert: 'Submitted invoices cannot be modified.'
   end

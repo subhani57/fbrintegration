@@ -19,14 +19,6 @@ module Fbr
       get('itemdesccode')
     end
     
-    def sro_items
-      get('sroitemcode')
-    end
-    
-    def transaction_types
-      get('transtypecode')
-    end
-    
     def uom
       get('uom')
     end
@@ -102,10 +94,6 @@ module Fbr
         Registration_No: ntn
       })
     end
-
-    def verify_buyer(registration_no:)
-      BuyerVerificationService.new(@user).verify(registration_no)
-    end
     
     private
 
@@ -158,10 +146,6 @@ module Fbr
       nil
     end
     
-    def post(url, data)
-      dist_request(url, data, method: :post)
-    end
-
     # FBR dist endpoints often return HTTP 500 with a valid JSON body — parse regardless of status code.
     def dist_request(url, data, method: :post)
       token = bearer_token

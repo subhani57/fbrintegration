@@ -67,13 +67,6 @@ module ApplicationHelper
     ])
   end
 
-  def fbr_config_used_for_submissions?(configuration)
-    user = configuration.user
-    return false unless user
-
-    user.default_fbr_environment == configuration.environment
-  end
-
   def fbr_admin_token_status(config, compact: false)
     if config&.token_configured?
       if compact
