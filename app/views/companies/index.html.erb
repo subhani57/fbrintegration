@@ -47,7 +47,7 @@
                             method: :delete,
                             class: 'btn btn-outline-danger btn-sm',
                             aria: { label: "Delete #{company.name}" },
-                            form: { class: 'd-inline', data: { turbo_confirm: "Delete #{company.name}?" } } do %>
+                            form: { class: 'd-inline', data: confirm_form_data("Delete #{company.name}?") } do %>
                           <i class="fas fa-trash"></i>
                         <% end %>
                       </div>

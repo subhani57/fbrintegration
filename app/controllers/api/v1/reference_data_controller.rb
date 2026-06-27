@@ -17,7 +17,7 @@ module Api
         data = provinces_data
         render json: data
       rescue => e
-        Rails.logger.error "Error in provinces: #{e.message}\n#{e.backtrace.join("\n")}"
+        log_reference_error(:provinces, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -25,7 +25,7 @@ module Api
         data = sort_hs_codes(hs_codes_data)
         render json: data
       rescue => e
-        Rails.logger.error "Error in hs_codes: #{e.message}\n#{e.backtrace.join("\n")}"
+        log_reference_error(:hs_codes, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -45,7 +45,7 @@ module Api
 
         render json: results
       rescue => e
-        Rails.logger.error "Error in search_hs_codes: #{e.message}"
+        log_reference_error(:search_hs_codes, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -53,7 +53,7 @@ module Api
         data = uom_data
         render json: data
       rescue => e
-        Rails.logger.error "Error in uom: #{e.message}\n#{e.backtrace.join("\n")}"
+        log_reference_error(:uom, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -70,7 +70,7 @@ module Api
         
         render json: data || []
       rescue => e
-        Rails.logger.error "Error in rates: #{e.message}"
+        log_reference_error(:rates, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -87,7 +87,7 @@ module Api
         
         render json: data || []
       rescue => e
-        Rails.logger.error "Error in sro_schedule: #{e.message}"
+        log_reference_error(:sro_schedule, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -104,7 +104,7 @@ module Api
         
         render json: data || []
       rescue => e
-        Rails.logger.error "Error in sro_item: #{e.message}"
+        log_reference_error(:sro_item, e)
         render json: { error: e.message }, status: :internal_server_error
       end
 
@@ -121,12 +121,16 @@ module Api
           )
           render json: data || []
         rescue => e
-          Rails.logger.error "Error fetching HS UOM: #{e.message}\n#{e.backtrace.join("\n")}"
+          log_reference_error(:hs_uom, e)
           render json: { error: e.message }, status: :internal_server_error
         end
       end
 
       private
+
+      def log_reference_error(action, error)
+        AppLogger.error('api.reference_data.failed', exception: error, action: action, user_id: current_user&.id)
+      end
 
       def set_reference_service
         @reference_service = Fbr::ReferenceService.new(current_user)
@@ -143,7 +147,7 @@ module Api
           end
         end
       rescue => e
-        Rails.logger.error "Error fetching provinces: #{e.message}"
+        log_reference_error(:provinces_data, e)
         []
       end
 
@@ -166,7 +170,7 @@ module Api
           HsCodeSorting.sort_codes(codes)
         end
       rescue => e
-        Rails.logger.error "Error fetching HS codes: #{e.message}\n#{e.backtrace.join("\n")}"
+        log_reference_error(:hs_codes_data, e)
         []
       end
 
@@ -199,7 +203,7 @@ module Api
           end
         end
       rescue => e
-        Rails.logger.error "Error fetching UOM: #{e.message}\n#{e.backtrace.join("\n")}"
+        log_reference_error(:uom_data, e)
         # Return fallback UOM
         [
           { id: 1, description: 'Numbers, pieces, units' },
@@ -222,7 +226,7 @@ module Api
           end
         end
       rescue => e
-        Rails.logger.error "Error fetching document types: #{e.message}"
+        log_reference_error(:document_types_data, e)
         []
       end
     end

@@ -8,7 +8,6 @@ class FbrInvoicesController < ApplicationController
   def index
     @invoices = current_user.invoices
       .where.not(fbr_invoice_id: [nil, ''])
-      .includes(:items)
       .order(submitted_at: :desc, updated_at: :desc)
       .page(params[:page])
       .per(20)
@@ -67,8 +66,8 @@ class FbrInvoicesController < ApplicationController
 
     result = Fbr::IrisInvoiceService.new(current_user).sync_invoice!(@invoice)
     if result[:success]
-      redirect_to fbr_invoice_path(@invoice),
-                  notice: "Synced from FBR (#{result[:source]})."
+      notice = result[:notice].presence || "Synced from FBR (#{result[:source]})."
+      redirect_to fbr_invoice_path(@invoice), notice: notice
     else
       redirect_to fbr_invoice_path(@invoice), alert: result[:error_message]
     end
@@ -77,6 +76,6 @@ class FbrInvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = current_user.invoices.find(params[:id])
+    @invoice = current_user.invoices.includes(:items).find(params[:id])
   end
 end

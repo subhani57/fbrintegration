@@ -25,6 +25,12 @@
                   input_html: { id: 'invoice_invoice_type' },
                   wrapper_html: { class: 'invoice-form-input mb-0' } %>
             </div>
+            <div class="col-md-6">
+              <%= f.input :pdf_invoice_number, label: 'Invoice no. (PDF)',
+                  input_html: { class: 'form-control', placeholder: 'Auto-assigned per your sequence' },
+                  hint: 'Auto-assigned for your account. Shown on the PDF only — not sent to FBR.',
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
             <div class="col-md-12" id="original-invoice-field" style="<%= 'display:none' unless f.object.debit_note? %>">
               <%= f.input :original_invoice_id, label: 'Original FBR invoice (for debit note)',
                   collection: (@submitted_invoices || []).map { |i| ["#{i.invoice_number} — #{i.fbr_invoice_id}", i.id] },

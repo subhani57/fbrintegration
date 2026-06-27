@@ -30,6 +30,8 @@ Rails.application.routes.draw do
       post :validate
       post :cancel
       post :save_template
+      post :sync_from_iris
+      post :mark_cancelled_on_iris
       get :status
       get :download_pdf
       get :download_xml

@@ -12,8 +12,8 @@
         <thead>
           <tr>
             <% if bulk_select %><th style="width:3%"></th><% end %>
-            <th style="width: 11%">Invoice #</th>
             <th style="width: 9%">Date</th>
+            <th style="width: 11%">Invoice #</th>
             <th style="width: 22%">Buyer</th>
             <th style="width: 11%">Amount</th>
             <th style="width: 10%">Status</th>
@@ -31,8 +31,8 @@
                   <% end %>
                 </td>
               <% end %>
-              <td class="text-nowrap"><%= invoice.invoice_number %></td>
               <td class="text-nowrap"><%= invoice.invoice_date.strftime('%Y-%m-%d') %></td>
+              <td class="text-nowrap"><%= invoice.pdf_display_number %></td>
               <td class="fbr-invoice-table__buyer" title="<%= invoice.buyer_name %>"><%= invoice.buyer_name %></td>
               <td class="text-nowrap"><%= format_pkr(invoice.total_amount) %></td>
               <td>
@@ -62,7 +62,7 @@
                     <% end %>
                     <% if invoice.draft? || invoice.validated? %>
                       <%= button_to submit_invoice_path(invoice), method: :post, class: 'btn btn-outline-success btn-sm',
-                          aria: { label: 'Submit to FBR' }, form: { data: { turbo_confirm: 'Submit to FBR?' }, class: 'd-inline' } do %>
+                          aria: { label: 'Submit to FBR' }, form: { data: confirm_form_data('Submit to FBR?'), class: 'd-inline' } do %>
                         <i class="fas fa-paper-plane"></i>
                       <% end %>
                     <% end %>
@@ -76,6 +76,11 @@
     </div>
   </div>
   <% if invoices.respond_to?(:total_count) %>
-    <%= render 'shared/pagination_footer', collection: invoices, form_path: invoices_path, per_options: [25, 50, 100], item_label: 'invoices' %>
+    <%= render 'shared/pagination_footer',
+        collection: invoices,
+        form_path: invoices_path,
+        per_options: [25, 50, 100],
+        item_label: 'invoices',
+        extra_params: params.permit(:q, :status).to_h.compact %>
   <% end %>
 </div>

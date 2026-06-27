@@ -12,7 +12,34 @@
       <% end if current_user.can_manage_invoices? %>
     </div>
 
-    
+    <%= form_with url: invoices_path, method: :get, local: true,
+        html: { class: 'row g-2 mb-4', data: { controller: 'auto-submit-form' } } do |f| %>
+      <%= hidden_field_tag :page, 1 %>
+      <div class="col-md-6">
+        <%= f.text_field :q,
+            value: params[:q],
+            placeholder: 'Search invoice #, buyer, NTN, FBR #…',
+            class: 'form-control',
+            autocomplete: 'off',
+            data: { action: 'input->auto-submit-form#submitDebounced' } %>
+      </div>
+      <div class="col-md-4">
+        <%= f.select :status,
+            options_for_select(
+              %w[draft validating validated submitting submitted approved failed rejected cancelled],
+              params[:status]
+            ),
+            { include_blank: 'All statuses' },
+            class: 'form-select',
+            data: { action: 'change->auto-submit-form#submit' } %>
+      </div>
+      <% if params[:q].present? || params[:status].present? %>
+        <div class="col-md-2">
+          <%= link_to 'Clear', invoices_path, class: 'btn btn-outline-secondary w-100' %>
+        </div>
+      <% end %>
+    <% end %>
+
     <% if @invoices.any? %>
       <% if current_user.can_manage_invoices? %>
         <%= form_with url: bulk_submit_invoices_path, method: :post, local: true, id: 'bulk-submit-form' do %>
@@ -21,6 +48,15 @@
       <% else %>
         <%= render 'invoices/index_table', invoices: @invoices, bulk_select: false %>
       <% end %>
+    <% elsif params[:q].present? || params[:status].present? %>
+      <div class="card fbr-empty-state">
+        <div class="card-body py-5">
+          <i class="fas fa-search fa-4x mb-3 text-muted"></i>
+          <h4 class="text-muted">No matching invoices</h4>
+          <p class="text-muted mb-4">Try a different search term or clear your filters.</p>
+          <%= link_to 'Clear search', invoices_path, class: 'btn btn-outline-secondary' %>
+        </div>
+      </div>
     <% else %>
       <div class="card fbr-empty-state">
         <div class="card-body py-5">

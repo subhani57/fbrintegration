@@ -26,20 +26,40 @@ class ProfilesController < ApplicationController
   def preferred_environment
     environment = params[:environment].to_s
     unless FbrConfiguration::ENVIRONMENTS.include?(environment)
-      redirect_to profile_path, alert: 'Invalid environment.'
+      respond_to do |format|
+        format.json { render json: { error: 'Invalid environment.' }, status: :unprocessable_entity }
+        format.html { redirect_to profile_path, alert: 'Invalid environment.' }
+      end
       return
     end
 
     if (reason = Fbr::EnvironmentGuard.switch_environment_blocked_reason(current_user, environment))
-      redirect_back fallback_location: profile_path, alert: reason
+      respond_to do |format|
+        format.json { render json: { error: reason }, status: :unprocessable_entity }
+        format.html { redirect_back fallback_location: profile_path, alert: reason }
+      end
       return
     end
 
     if current_user.update(preferred_fbr_environment: environment)
-      redirect_back fallback_location: profile_path,
-                  notice: "#{environment.humanize} is now the active environment for invoice submission."
+      notice = "#{environment.humanize} is now the active environment for invoice submission."
+      respond_to do |format|
+        format.json do
+          render json: {
+            environment: environment,
+            notice: notice,
+            banner_html: render_environment_banner_html
+          }
+        end
+        format.turbo_stream { flash.now[:notice] = notice }
+        format.html { redirect_back fallback_location: profile_path, notice: notice }
+      end
     else
-      redirect_back fallback_location: profile_path, alert: current_user.errors.full_messages.join(', ')
+      error = current_user.errors.full_messages.join(', ')
+      respond_to do |format|
+        format.json { render json: { error: error }, status: :unprocessable_entity }
+        format.html { redirect_back fallback_location: profile_path, alert: error }
+      end
     end
   end
 
@@ -51,6 +71,14 @@ class ProfilesController < ApplicationController
         config.active = true
       end
     end
+  end
+
+  def render_environment_banner_html
+    render_to_string(
+      partial: 'shared/fbr_environment_banner',
+      layout: false,
+      formats: [:html]
+    )
   end
 
   def profile_params

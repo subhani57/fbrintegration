@@ -8,7 +8,7 @@ class FbrSyncJob < ApplicationJob
     scope = user_id ? User.where(id: user_id) : User.taxpayers
     synced = 0
 
-    scope.find_each do |user|
+    scope.includes(:fbr_configurations).find_each do |user|
       next unless user.configuration_for(user.default_fbr_environment)&.token_configured?
 
       user.invoices.where.not(fbr_invoice_id: nil).where(fbr_status: 'submitted').find_each do |invoice|
@@ -16,10 +16,10 @@ class FbrSyncJob < ApplicationJob
         result = service.sync_invoice!(invoice)
         synced += 1 if result[:success]
       rescue StandardError => e
-        Rails.logger.warn "FbrSyncJob skip invoice #{invoice.id}: #{e.message}"
+        AppLogger.warn('fbr.sync.invoice_skipped', exception: e, invoice_id: invoice.id, user_id: user.id)
       end
     end
 
-    Rails.logger.info "FbrSyncJob completed — synced #{synced} invoice(s)"
+    AppLogger.info('fbr.sync.completed', synced_count: synced, user_id: user_id)
   end
 end

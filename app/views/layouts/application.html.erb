@@ -20,10 +20,12 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   
   <%= yield :head %>
+
+  <%= javascript_importmap_tags %>
 </head>
-<body class="fbr-app">
+<body class="fbr-app" data-fbr-environment="<%= user_signed_in? && current_user.taxpayer? ? current_user.default_fbr_environment : '' %>">
   <!-- Navigation (persistent across Turbo visits) -->
-  <nav class="navbar navbar-expand-lg navbar-dark navbar-fbr" id="fbr-main-navbar" data-turbo-permanent>
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-fbr" id="fbr-main-navbar">
     <div class="container-fluid">
       <%= link_to root_path, class: 'navbar-brand' do %>
         <i class="fas fa-file-invoice-dollar"></i> FBR Invoicing
@@ -141,9 +143,13 @@
   </nav>
 
   <!-- Flash Messages (converted to floating notifications by JS) -->
-  <%= render "shared/flash_messages" %>
+  <div id="fbr-flash-slot">
+    <%= render "shared/flash_messages" %>
+  </div>
 
-  <%= render 'shared/fbr_environment_banner' %>
+  <div id="fbr-environment-banner">
+    <%= render 'shared/fbr_environment_banner' %>
+  </div>
 
   <!-- Main Content -->
   <div class="container-fluid mt-3 fbr-main-content">
@@ -170,11 +176,10 @@
 
   <!-- jQuery for Select2 -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  
-  <!-- Bootstrap 5 JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  
-  <!-- Application JS -->
-  <%= javascript_importmap_tags %>
+
+  <%= render "shared/fbr_ui_boot" %>
+
+  <div id="fbr-portal" data-turbo-permanent></div>
 </body>
 </html>

@@ -1,18 +1,22 @@
+import { setupFbrDialogs, closeActiveDialog } from "fbr_dialog"
 import "@hotwired/turbo-rails"
 import "controllers"
-import { setupFbrDialogs, closeActiveDialog } from "fbr_dialog"
 import { initFbrUi, prepareTurboCache } from "fbr_ui"
 
-setupFbrDialogs()
+const bootPage = () => {
+  setupFbrDialogs()
+  initFbrUi()
+}
 
-const bootFbrUi = () => initFbrUi()
-
-document.addEventListener("turbo:load", bootFbrUi)
+document.addEventListener("turbo:load", bootPage)
+document.addEventListener("turbo:before-visit", closeActiveDialog)
 document.addEventListener("turbo:before-cache", () => {
   closeActiveDialog()
   prepareTurboCache()
 })
 
-if (document.readyState !== "loading") {
-  bootFbrUi()
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootPage)
+} else {
+  bootPage()
 }

@@ -5,6 +5,6 @@ class CleanupLogsJob < ApplicationJob
 
   def perform(days: 90)
     deleted = FbrLog.cleanup!(days: days)
-    Rails.logger.info "CleanupLogsJob removed #{deleted} FBR log(s) older than #{days} days"
+    AppLogger.info('maintenance.cleanup_logs', deleted_count: deleted, retention_days: days)
   end
 end

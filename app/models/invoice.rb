@@ -10,6 +10,7 @@ class Invoice < ApplicationRecord
   belongs_to :original_invoice, class_name: 'Invoice', optional: true
   has_many :credit_notes, class_name: 'Invoice', foreign_key: :original_invoice_id, dependent: :nullify
   has_many :items, class_name: 'InvoiceItem', dependent: :destroy
+  has_many :fbr_logs, dependent: :destroy
   accepts_nested_attributes_for :items, reject_if: proc { |attributes| 
     attributes['description'].blank? && attributes['quantity'].blank? && attributes['unit_price'].blank?
   }, allow_destroy: true
@@ -81,6 +82,7 @@ class Invoice < ApplicationRecord
   before_validation :apply_buyer_defaults
   before_validation :apply_fbr_defaults
   before_validation :generate_invoice_number, on: :create
+  before_validation :assign_pdf_invoice_number, on: :create
   before_save :calculate_totals
   after_update_commit :broadcast_show_page_refresh_after_fbr_processing
   # after_save :update_dashboard_stats
@@ -95,7 +97,32 @@ class Invoice < ApplicationRecord
   scope :by_date_range, ->(start_date, end_date) { where(invoice_date: start_date..end_date) }
 
   # Class Methods
-  def self.generate_number
+  def self.next_sequence_number_for(user, date: Date.today)
+    return nil unless user
+
+    date_prefix = date.strftime('%Y%m%d')
+    pattern = "#{date_prefix}-%"
+
+    numbers = user.invoices.where(
+      "invoice_number LIKE :pattern OR pdf_invoice_number LIKE :pattern",
+      pattern: pattern
+    ).pluck(:invoice_number, :pdf_invoice_number).flatten.compact
+
+    max_seq = numbers.filter_map do |num|
+      next unless num.start_with?(date_prefix)
+
+      suffix = num.delete_prefix("#{date_prefix}-")
+      suffix.match?(/\A\d+\z/) ? suffix.to_i : nil
+    end.max || 0
+
+    "#{date_prefix}-#{format('%04d', max_seq + 1)}"
+  end
+
+  def self.generate_number(user = nil)
+    user ? next_sequence_number_for(user) : legacy_generate_number
+  end
+
+  def self.legacy_generate_number
     date_prefix = Date.today.strftime('%Y%m%d')
     last_number = where("invoice_number LIKE ?", "#{date_prefix}-%").count
     "#{date_prefix}-#{format('%04d', last_number + 1)}"
@@ -121,7 +148,19 @@ class Invoice < ApplicationRecord
   end
 
   def generate_invoice_number
-    self.invoice_number ||= self.class.generate_number
+    return if invoice_number.present?
+
+    self.invoice_number = self.class.next_sequence_number_for(user)
+  end
+
+  def assign_pdf_invoice_number
+    return if pdf_invoice_number.present?
+
+    self.pdf_invoice_number = self.class.next_sequence_number_for(user)
+  end
+
+  def pdf_display_number
+    pdf_invoice_number.presence || invoice_number
   end
 
   def perform_validation
@@ -155,10 +194,10 @@ class Invoice < ApplicationRecord
         self.qr_code_data = Base64.strict_encode64(png.to_s)
         save!
       else
-        Rails.logger.info "QR code generated but qr_code_data column doesn't exist"
+        AppLogger.info('invoice.qr_code_column_missing', invoice_id: id)
       end
     rescue => e
-      Rails.logger.error "QR code generation failed: #{e.message}"
+      AppLogger.error('invoice.qr_code_generation_failed', exception: e, invoice_id: id)
       # Don't fail invoice submission if QR code generation fails
     end
   end
@@ -168,7 +207,32 @@ class Invoice < ApplicationRecord
   end
 
   def fbr_on_iris?
-    fbr_invoice_id.present? && fbr_status == 'submitted'
+    fbr_invoice_id.present? && fbr_status == 'submitted' && !cancelled?
+  end
+
+  def iris_cancelled?
+    cancelled? && fbr_status == 'cancelled'
+  end
+
+  def apply_iris_cancellation!(source_data: nil, message: nil)
+    return true if iris_cancelled?
+
+    attrs = {
+      status: 'cancelled',
+      fbr_status: 'cancelled',
+      error_message: message.presence || 'Cancelled on FBR IRIS.'
+    }
+
+    if source_data.is_a?(Hash)
+      attrs[:response_data] = (response_data || {}).merge(
+        'iris_sync' => source_data,
+        'iris_synced_at' => Time.current.iso8601,
+        'iris_cancelled_at' => Time.current.iso8601
+      )
+    end
+
+    update!(attrs)
+    true
   end
 
   def fbr_qr_image_base64
@@ -283,11 +347,11 @@ class Invoice < ApplicationRecord
       clear_stale_fbr_error!
       true
     else
-      Rails.logger.info "safely_mark_validated!: cannot transition invoice=#{id} from status=#{status}"
+      AppLogger.info('invoice.validate_transition_skipped', invoice_id: id, status: status)
       false
     end
   rescue AASM::InvalidTransition => e
-    Rails.logger.info "safely_mark_validated! caught AASM::InvalidTransition: #{e.message}"
+    AppLogger.info('invoice.validate_transition_invalid', invoice_id: id, message: e.message)
     false
   end
 
@@ -340,9 +404,10 @@ class Invoice < ApplicationRecord
     result = service.submit_invoice(self)
     
     if result[:success]
+      stored_data = (result[:data] || {}).merge('submitted_environment' => env.to_s)
       update!(
         fbr_invoice_id: result[:fbr_invoice_id] || result[:invoice_number],
-        response_data: result[:data],
+        response_data: stored_data,
         submitted_at: Time.current,
         error_message: nil,
         status: 'approved',
@@ -365,7 +430,7 @@ class Invoice < ApplicationRecord
       false
     end
   rescue => e
-    Rails.logger.error "FBR Submission Error: #{e.message}\n#{e.backtrace.join("\n")}"
+    AppLogger.error('invoice.fbr_submission_failed', exception: e, invoice_id: id, user_id: user_id)
     update!(
       error_message: e.message,
       fbr_status: 'failed'

@@ -1,4 +1,6 @@
 module ApplicationHelper
+  include ConfirmFormHelper
+
   def status_badge_color(status)
     case status&.to_s
     when 'draft'
@@ -24,6 +26,8 @@ module ApplicationHelper
   end
 
   def invoice_fbr_submitted?(invoice)
+    return false if invoice.cancelled? || invoice.fbr_status == 'cancelled'
+
     invoice.fbr_status == 'submitted' || invoice.fbr_invoice_id.present?
   end
 

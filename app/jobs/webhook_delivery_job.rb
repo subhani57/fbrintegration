@@ -11,7 +11,7 @@ class WebhookDeliveryJob < ApplicationJob
     body = { event: event, payload: payload, sent_at: Time.current.iso8601 }.to_json
     signature = OpenSSL::HMAC.hexdigest('SHA256', webhook.secret.to_s, body)
 
-    HTTParty.post(
+    response = HTTParty.post(
       webhook.url,
       body: body,
       headers: {
@@ -21,5 +21,21 @@ class WebhookDeliveryJob < ApplicationJob
       },
       timeout: 15
     )
+
+    AppLogger.info(
+      'webhook.delivered',
+      webhook_id: webhook.id,
+      user_id: webhook.user_id,
+      event: event,
+      status: response.code
+    )
+  rescue StandardError => e
+    AppLogger.error(
+      'webhook.delivery_failed',
+      exception: e,
+      webhook_id: webhook_id,
+      event: event
+    )
+    raise
   end
 end

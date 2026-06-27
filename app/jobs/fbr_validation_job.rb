@@ -1,8 +1,10 @@
+# frozen_string_literal: true
+
 class FbrValidationJob < ApplicationJob
   queue_as :fbr_invoices
 
   def perform(invoice_id)
-    invoice = Invoice.find(invoice_id)
+    invoice = Invoice.includes(:items, :user).find(invoice_id)
     return if invoice.cancelled? || invoice.validated?
     return unless invoice.validating?
 

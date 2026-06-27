@@ -23,7 +23,7 @@ class DashboardController < ApplicationController
     @fbr_submitted_count = scope.where.not(fbr_invoice_id: [nil, '']).count
     @fbr_configured = current_user.can_submit_invoices?
 
-    @recent_invoices = scope.includes(:items).order(created_at: :desc).limit(10)
+    @recent_invoices = scope.order(created_at: :desc).limit(10)
 
     totals_by_date = scope.where(invoice_date: chart_range)
       .group(:invoice_date)
@@ -49,7 +49,7 @@ class DashboardController < ApplicationController
 
     base_invoices = current_user.invoices.where(invoice_date: @start_date..@end_date)
 
-    @invoices = base_invoices.includes(:items).order(invoice_date: :desc)
+    @invoices = base_invoices.order(invoice_date: :desc)
 
     @summary = Reports::TaxSummary.for_user(current_user, start_date: @start_date, end_date: @end_date)
     @summary.merge!(

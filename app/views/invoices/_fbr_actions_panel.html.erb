@@ -63,18 +63,12 @@
   <div class="invoice-form-fbr-panel__actions">
     <%= link_to validate_invoice_path(invoice),
         class: "btn btn-outline-info w-100 #{'disabled' if submission_blocked.present?}",
-        data: {
-          turbo_method: :post,
-          turbo_confirm: submission_blocked.blank? ? fbr_submission_confirm('validate') : nil
-        } do %>
+        data: { turbo_method: :post }.merge(confirm_link_data(submission_blocked.blank? ? fbr_submission_confirm('validate') : nil)) do %>
       <i class="fas fa-check-circle"></i> Validate with FBR
     <% end %>
     <%= link_to submit_invoice_path(invoice),
         class: "btn btn-success w-100 #{'disabled' if submission_blocked.present?}",
-        data: {
-          turbo_method: :post,
-          turbo_confirm: submission_blocked.blank? ? fbr_submit_confirm : nil
-        } do %>
+        data: { turbo_method: :post }.merge(confirm_link_data(submission_blocked.blank? ? fbr_submit_confirm : nil)) do %>
       <i class="fas fa-paper-plane"></i> Submit to FBR
     <% end %>
   </div>

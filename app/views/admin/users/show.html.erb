@@ -12,9 +12,9 @@
           class: 'btn btn-outline-warning',
           disabled: all_sandbox_done || test_invoices_blocked,
           form: {
-            data: {
-              turbo_confirm: (all_sandbox_done || test_invoices_blocked) ? nil : "Send #{@pending_sandbox_scenarios.size} sandbox test invoice(s) (#{@pending_sandbox_scenarios.join(', ')}) to FBR sandbox? Already completed scenarios will be skipped."
-            }
+            data: confirm_form_data(
+              (all_sandbox_done || test_invoices_blocked) ? nil : "Send #{@pending_sandbox_scenarios.size} sandbox test invoice(s) (#{@pending_sandbox_scenarios.join(', ')}) to FBR sandbox? Already completed scenarios will be skipped."
+            )
           },
           data: { disable_with: 'Sending…' } do %>
         <i class="fas fa-flask"></i>

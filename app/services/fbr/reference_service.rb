@@ -71,11 +71,11 @@ module Fbr
       if response.success?
         JSON.parse(response.body)
       else
-        Rails.logger.error "FBR HS_UOM API Error: #{response.status} - #{response.body}"
+        AppLogger.error('fbr.reference.hs_uom_error', status: response.status, body: response.body.to_s.truncate(500))
         nil
       end
     rescue => e
-      Rails.logger.error "FBR HS_UOM API Exception: #{e.message}"
+      AppLogger.error('fbr.reference.hs_uom_exception', exception: e)
       nil
     end
     
@@ -122,11 +122,11 @@ module Fbr
       if response.success?
         JSON.parse(response.body)
       else
-        Rails.logger.error "FBR API Error: #{response.status} - #{response.body}"
+        AppLogger.error('fbr.reference.api_error', status: response.status, body: response.body.to_s.truncate(500))
         nil
       end
     rescue => e
-      Rails.logger.error "FBR API Exception: #{e.message}\n#{e.backtrace.join("\n")}"
+      AppLogger.error('fbr.reference.api_exception', exception: e)
       nil
     end
     
@@ -150,11 +150,11 @@ module Fbr
       if response.success?
         JSON.parse(response.body)
       else
-        Rails.logger.error "FBR API Error: #{response.status} - #{response.body}"
+        AppLogger.error('fbr.reference.api_error', status: response.status, body: response.body.to_s.truncate(500))
         nil
       end
     rescue => e
-      Rails.logger.error "FBR API Exception: #{e.message}"
+      AppLogger.error('fbr.reference.api_exception', exception: e)
       nil
     end
     
@@ -180,10 +180,10 @@ module Fbr
         return parsed
       end
 
-      Rails.logger.error "FBR dist API error #{response.status}: #{response.body.to_s.truncate(500)}"
+      AppLogger.error('fbr.reference.dist_api_error', status: response.status, body: response.body.to_s.truncate(500))
       nil
     rescue StandardError => e
-      Rails.logger.error "FBR dist API Exception: #{e.message}"
+      AppLogger.error('fbr.reference.dist_api_exception', exception: e)
       nil
     end
 

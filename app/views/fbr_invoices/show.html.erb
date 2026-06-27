@@ -12,6 +12,14 @@
         <%= button_to sync_from_fbr_fbr_invoice_path(@invoice), method: :post, class: 'btn btn-outline-primary' do %>
           <i class="fas fa-sync"></i> Sync from FBR
         <% end %>
+        <% if policy(@invoice).mark_cancelled_on_iris? %>
+          <%= button_to mark_cancelled_on_iris_invoice_path(@invoice),
+              method: :post,
+              class: 'btn btn-outline-warning',
+              form: { data: confirm_form_data('Confirm this invoice was cancelled on the IRIS portal?') } do %>
+            <i class="fas fa-ban"></i> Mark cancelled on IRIS
+          <% end %>
+        <% end %>
       <% end %>
       <%= link_to fbr_invoices_path, class: 'btn btn-outline-secondary' do %>
         <i class="fas fa-arrow-left"></i> Back

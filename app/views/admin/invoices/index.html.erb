@@ -11,7 +11,7 @@
 
 <%= form_with url: admin_invoices_path, method: :get, local: true, class: 'row g-2 mb-4' do |f| %>
   <div class="col-md-3">
-    <%= f.text_field :q, value: params[:q], placeholder: 'Search invoice, buyer, NTN…', class: 'form-control' %>
+    <%= f.text_field :q, value: params[:q], placeholder: 'Search email, invoice #, buyer, NTN, FBR #…', class: 'form-control' %>
   </div>
   <div class="col-md-3">
     <%= f.select :user_id, options_from_collection_for_select(@users_for_filter, :id, :email, params[:user_id]),
@@ -31,8 +31,8 @@
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>Invoice #</th>
           <th>Date</th>
+          <th>Invoice #</th>
           <th>Taxpayer</th>
           <th>Buyer</th>
           <th>Amount</th>
@@ -44,8 +44,8 @@
       <tbody>
         <% @invoices.each do |inv| %>
           <tr>
-            <td><%= inv.invoice_number %></td>
             <td><%= inv.invoice_date %></td>
+            <td><%= inv.pdf_display_number %></td>
             <td><%= link_to inv.user&.email, admin_user_path(inv.user) if inv.user %></td>
             <td><%= inv.buyer_name %></td>
             <td><%= number_to_currency(inv.total_amount, unit: 'Rs. ') %></td>

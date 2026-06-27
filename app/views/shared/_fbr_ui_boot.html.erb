@@ -1,0 +1,208 @@
+<div id="fbr-ui-permanent" data-turbo-permanent>
+  <div id="fbr-confirm-modal"
+       class="modal fade"
+       tabindex="-1"
+       aria-labelledby="fbrConfirmModalTitle"
+       aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="fbrConfirmModalTitle">Please confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body pt-2">
+          <p class="mb-0 text-secondary" id="fbrConfirmModalBody"></p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="fbrConfirmModalCancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="fbrConfirmModalOk">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    if (window.__fbrUiBooted) return
+    window.__fbrUiBooted = true
+
+    var modalEl = document.getElementById("fbr-confirm-modal")
+    var modalInstance = null
+    var pendingResolve = null
+    var modalReady = false
+
+    function finishConfirm(result) {
+      if (!pendingResolve) return
+      var resolve = pendingResolve
+      pendingResolve = null
+      resolve(result)
+    }
+
+    function setupModal() {
+      if (modalReady || !modalEl || typeof bootstrap === "undefined") return
+      modalReady = true
+      modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl, { backdrop: true, keyboard: true })
+
+      document.getElementById("fbrConfirmModalOk").addEventListener("click", function () {
+        finishConfirm(true)
+        modalInstance.hide()
+      })
+
+      modalEl.addEventListener("hidden.bs.modal", function () {
+        finishConfirm(false)
+      })
+    }
+
+    function isDestructive(message) {
+      return /delete|cancel|remove|logout|production|submit|send test|discard/i.test(String(message))
+    }
+
+    window.fbrConfirm = function (message) {
+      setupModal()
+      if (!modalInstance) return Promise.resolve(window.confirm(message))
+
+      return new Promise(function (resolve) {
+        pendingResolve = resolve
+        var destructive = isDestructive(message)
+        document.getElementById("fbrConfirmModalTitle").textContent = destructive ? "Please confirm" : "Are you sure?"
+        document.getElementById("fbrConfirmModalBody").textContent = message
+        var okBtn = document.getElementById("fbrConfirmModalOk")
+        var cancelBtn = document.getElementById("fbrConfirmModalCancel")
+        okBtn.textContent = destructive ? "Yes, continue" : "Confirm"
+        okBtn.className = destructive ? "btn btn-danger" : "btn btn-primary"
+        cancelBtn.hidden = false
+        modalInstance.show()
+        okBtn.focus()
+      })
+    }
+
+    window.fbrHideConfirm = function () {
+      if (modalInstance) modalInstance.hide()
+      finishConfirm(false)
+    }
+
+    function csrfToken() {
+      var meta = document.querySelector('meta[name="csrf-token"]')
+      return meta ? meta.content : ""
+    }
+
+    function applyEnvironment(environment, bannerHtml) {
+      if (!environment) return
+      document.body.dataset.fbrEnvironment = environment
+      var switcher = document.getElementById("fbr-env-switcher")
+      if (switcher) {
+        switcher.querySelectorAll("[data-fbr-environment]").forEach(function (el) {
+          var env = el.dataset.fbrEnvironment
+          var active = env === environment
+          el.classList.toggle("fbr-env-switcher__btn--active", active)
+          el.classList.toggle("fbr-env-switcher__btn--production", active && env === "production")
+        })
+      }
+      if (bannerHtml != null) {
+        var banner = document.getElementById("fbr-environment-banner")
+        if (banner) banner.innerHTML = bannerHtml
+      }
+    }
+
+    function performEnvSwitch(button) {
+      var url = button.dataset.url
+      var environment = button.dataset.fbrEnvironment
+      if (!url || !environment) return
+
+      button.classList.add("fbr-env-switcher__btn--loading")
+
+      fetch(url, {
+        method: "PATCH",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken(),
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "same-origin"
+      })
+        .then(function (response) {
+          return response.json().catch(function () { return {} }).then(function (data) {
+            return { ok: response.ok, data: data }
+          })
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            window.alert(result.data.error || "Could not switch FBR environment.")
+            return
+          }
+          applyEnvironment(result.data.environment || environment, result.data.banner_html)
+        })
+        .catch(function () {
+          window.alert("Could not switch FBR environment. Please try again.")
+        })
+        .finally(function () {
+          button.classList.remove("fbr-env-switcher__btn--loading")
+        })
+    }
+
+    document.addEventListener("click", function (event) {
+      var target = event.target
+      if (target && target.nodeType !== 1) target = target.parentElement
+      if (!target) return
+
+      var envBtn = target.closest("[data-fbr-env-switch]")
+      if (envBtn) {
+        if (envBtn.classList.contains("fbr-env-switcher__btn--disabled")) return
+        if (envBtn.classList.contains("fbr-env-switcher__btn--active")) return
+
+        event.preventDefault()
+        event.stopImmediatePropagation()
+
+        var envMsg = envBtn.getAttribute("data-fbr-confirm")
+        var chain = envMsg ? window.fbrConfirm(envMsg) : Promise.resolve(true)
+        chain.then(function (ok) { if (ok) performEnvSwitch(envBtn) })
+        return
+      }
+
+      var link = target.closest("a[data-fbr-confirm]")
+      if (link) {
+        if (link.dataset.fbrConfirmed === "1") {
+          delete link.dataset.fbrConfirmed
+          return
+        }
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        window.fbrConfirm(link.getAttribute("data-fbr-confirm")).then(function (ok) {
+          if (!ok) return
+          link.dataset.fbrConfirmed = "1"
+          link.click()
+        })
+        return
+      }
+
+      var submitter = target.closest('button[type="submit"], input[type="submit"]')
+      if (!submitter || submitter.disabled) return
+      var form = submitter.form
+      if (!form) return
+      var formMsg = form.getAttribute("data-fbr-confirm")
+      if (!formMsg) return
+
+      if (form.dataset.fbrConfirmed === "1") {
+        delete form.dataset.fbrConfirmed
+        return
+      }
+
+      event.preventDefault()
+      event.stopImmediatePropagation()
+      window.fbrConfirm(formMsg).then(function (ok) {
+        if (!ok) return
+        form.dataset.fbrConfirmed = "1"
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit(submitter)
+        } else {
+          form.submit()
+        }
+      })
+    }, true)
+
+    document.addEventListener("turbo:before-visit", window.fbrHideConfirm)
+    document.addEventListener("turbo:before-cache", window.fbrHideConfirm)
+  })()
+  </script>
+</div>

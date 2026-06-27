@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_27_211000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -144,6 +144,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_211000) do
     t.string "invoice_number"
     t.string "invoice_type"
     t.bigint "original_invoice_id"
+    t.string "pdf_invoice_number"
     t.text "qr_code_data"
     t.json "response_data"
     t.integer "retry_count", default: 0
@@ -162,9 +163,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_211000) do
     t.bigint "user_id", null: false
     t.index ["buyer_company_id"], name: "index_invoices_on_buyer_company_id"
     t.index ["fbr_invoice_id"], name: "index_invoices_on_fbr_invoice_id"
-    t.index ["invoice_number"], name: "index_invoices_on_invoice_number", unique: true
     t.index ["original_invoice_id"], name: "index_invoices_on_original_invoice_id"
     t.index ["scenario_id"], name: "index_invoices_on_scenario_id"
+    t.index ["user_id", "invoice_number"], name: "index_invoices_on_user_id_and_invoice_number", unique: true
     t.index ["user_id"], name: "index_invoices_on_user_id"
   end
 

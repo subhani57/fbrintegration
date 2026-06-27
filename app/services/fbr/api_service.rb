@@ -38,18 +38,36 @@ module Fbr
       validate_configuration
       endpoint = ENDPOINTS[:post_invoice][@environment]
       payload = build_invoice_payload(invoice)
+      AppLogger.info('fbr.api.submit_started', invoice_id: invoice.id, user_id: @user.id, environment: @environment)
 
       response = post_request(endpoint, payload)
-      handle_response(response, invoice, payload)
+      result = handle_response(response, invoice, payload)
+      AppLogger.info(
+        'fbr.api.submit_finished',
+        invoice_id: invoice.id,
+        user_id: @user.id,
+        environment: @environment,
+        success: result[:success]
+      )
+      result
     end
 
     def validate_invoice(invoice)
       validate_configuration
       endpoint = ENDPOINTS[:validate_invoice][@environment]
       payload = build_invoice_payload(invoice)
+      AppLogger.info('fbr.api.validate_started', invoice_id: invoice.id, user_id: @user.id, environment: @environment)
 
       response = post_request(endpoint, payload)
-      handle_response(response, invoice, payload)
+      result = handle_response(response, invoice, payload)
+      AppLogger.info(
+        'fbr.api.validate_finished',
+        invoice_id: invoice.id,
+        user_id: @user.id,
+        environment: @environment,
+        success: result[:success]
+      )
+      result
     end
 
     private
@@ -73,7 +91,7 @@ module Fbr
         timeout: 30
       )
     rescue HTTParty::Error, Net::OpenTimeout, Net::ReadTimeout => e
-      Rails.logger.error "FBR API request failed: #{e.message}"
+      AppLogger.error('fbr.api.request_failed', exception: e, endpoint: endpoint, environment: @environment, user_id: @user.id)
       OpenStruct.new(body: { error: e.message }.to_json, parsed_response: nil, code: 500)
     end
 
@@ -206,7 +224,7 @@ module Fbr
         environment: @environment.to_s
       )
     rescue StandardError => e
-      Rails.logger.error "FBR log failed: #{e.message}"
+      AppLogger.error('fbr.api.log_persist_failed', exception: e, user_id: @user.id, invoice_id: invoice.is_a?(Invoice) ? invoice.id : nil)
     end
   end
 end

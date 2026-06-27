@@ -1,7 +1,12 @@
 <div class="invoice-show-page">
+  <% content_for :head do %>
+    <meta name="turbo-cache-control" content="no-cache">
+  <% end %>
+
   <% hero_class = case @invoice.status
                   when 'approved', 'submitted' then 'invoice-hero--success'
                   when 'failed', 'rejected' then 'invoice-hero--danger'
+                  when 'cancelled' then 'invoice-hero--danger'
                   when 'submitting', 'validating' then 'invoice-hero--warning'
                   else ''
                   end %>
@@ -11,7 +16,7 @@
       <div class="col-md-8">
         <div class="invoice-hero__number">
           <i class="fas fa-file-invoice-dollar me-2 opacity-75"></i>
-          <%= @invoice.invoice_number %>
+          <%= @invoice.pdf_display_number %>
         </div>
         <div class="invoice-hero__meta">
           <%= @invoice.invoice_type %> &middot;
@@ -26,7 +31,11 @@
           <i class="fas fa-circle me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
           <%= @invoice.status&.humanize || 'Draft' %>
         </span>
-        <% if invoice_fbr_submitted?(@invoice) %>
+        <% if @invoice.iris_cancelled? %>
+          <span class="invoice-hero__badge ms-2">
+            <i class="fas fa-ban me-1"></i> Cancelled on IRIS
+          </span>
+        <% elsif invoice_fbr_submitted?(@invoice) %>
           <span class="invoice-hero__badge ms-2">
             <i class="fas fa-check-circle me-1"></i> FBR Verified
           </span>
@@ -34,6 +43,16 @@
       </div>
     </div>
   </div>
+
+  <% if @invoice.iris_cancelled? %>
+    <div class="alert alert-warning d-flex align-items-start gap-3 mb-4">
+      <i class="fas fa-exclamation-triangle fa-lg mt-1" aria-hidden="true"></i>
+      <div>
+        <strong>Cancelled on FBR IRIS</strong>
+        <div class="small mb-0 opacity-75"><%= @invoice.error_message.presence || 'This invoice is no longer active on IRIS.' %></div>
+      </div>
+    </div>
+  <% end %>
 
   <% if %w[submitting validating].include?(@invoice.status) %>
     <%= turbo_stream_from @invoice %>
@@ -71,7 +90,7 @@
       <% end %>
       <% if @invoice.may_cancel? %>
         <%= button_to cancel_invoice_path(@invoice), method: :post, class: 'btn btn-outline-warning',
-            form: { data: { turbo_confirm: 'Cancel this invoice?' } } do %>
+            form: { data: confirm_form_data('Cancel this invoice?') } do %>
           <i class="fas fa-ban"></i> Cancel
         <% end %>
       <% end %>
@@ -79,14 +98,27 @@
         <%= button_to validate_invoice_path(@invoice),
             method: :post,
             class: 'btn btn-outline-info',
-            form: { data: { turbo_confirm: fbr_submission_confirm('validate') } } do %>
+            form: { data: confirm_form_data(fbr_submission_confirm('validate')) } do %>
           <i class="fas fa-check-double"></i> Validate
         <% end %>
         <%= button_to submit_invoice_path(@invoice),
             method: :post,
             class: "btn btn-#{production_fbr_active? ? 'danger' : 'success'}",
-            form: { data: { turbo_confirm: fbr_submit_confirm } } do %>
+            form: { data: confirm_form_data(fbr_submit_confirm) } do %>
           <i class="fas fa-paper-plane"></i> Submit to FBR<%= ' (Production)' if production_fbr_active? %>
+        <% end %>
+      <% end %>
+    <% end %>
+    <% if current_user.can_manage_invoices? && @invoice.fbr_invoice_id.present? %>
+      <%= button_to sync_from_iris_invoice_path(@invoice), method: :post, class: 'btn btn-outline-primary' do %>
+        <i class="fas fa-sync"></i> Sync from IRIS
+      <% end %>
+      <% if policy(@invoice).mark_cancelled_on_iris? %>
+        <%= button_to mark_cancelled_on_iris_invoice_path(@invoice),
+            method: :post,
+            class: 'btn btn-outline-warning',
+            form: { data: confirm_form_data('Confirm this invoice was cancelled on the IRIS portal? This updates your app only.') } do %>
+          <i class="fas fa-ban"></i> Mark cancelled on IRIS
         <% end %>
       <% end %>
     <% end %>
@@ -126,7 +158,7 @@
           <div class="invoice-info-grid">
             <div class="invoice-info-item">
               <label>Invoice Number</label>
-              <span><%= @invoice.invoice_number %></span>
+              <span><%= @invoice.pdf_display_number %></span>
             </div>
             <div class="invoice-info-item">
               <label>Invoice Date</label>

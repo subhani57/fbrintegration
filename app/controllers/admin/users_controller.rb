@@ -30,7 +30,7 @@ module Admin
 
     def show
       @invoices = @user.invoices.order(created_at: :desc).limit(10)
-      @sandbox_config = @user.fbr_configurations.find_by(environment: 'sandbox')
+      @sandbox_config = @user.fbr_configurations.find { |c| c.environment == 'sandbox' }
       if @user.taxpayer?
         @completed_sandbox_scenarios = Fbr::SandboxTestInvoicesService.completed_scenario_ids_for(@user)
         @pending_sandbox_scenarios = Fbr::SandboxTestInvoicesService::SCENARIO_IDS - @completed_sandbox_scenarios
@@ -146,7 +146,7 @@ module Admin
     private
 
     def set_user
-      @user = User.find(params[:id])
+      @user = User.includes(:fbr_configurations).find(params[:id])
     end
 
     def user_params

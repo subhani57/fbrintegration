@@ -75,7 +75,9 @@ class PdfGenerator
       label: expanded ? 8 : 7,
       display: expanded ? 28 : 22,
       table: expanded ? 8.5 : 7.5,
-      party_min: expanded ? 82 : 62,
+      party_body: expanded ? 11 : 9.5,
+      party_header: expanded ? 9.5 : 8.5,
+      party_min: expanded ? 92 : 72,
       party_top_margin: expanded ? 20 : 14,
       divider_top_margin: expanded ? 18 : 12,
       logo: expanded ? 56 : 42,
@@ -87,12 +89,14 @@ class PdfGenerator
     case mode
     when :compact
       base.merge!(gap: 9, body: 7.5, table: 7, display: 18, logo: 38, qr: 48,
-                  party_min: 58, party_top_margin: 10, divider_top_margin: 10,
+                  party_body: 9, party_header: 8.5,
+                  party_min: 68, party_top_margin: 10, divider_top_margin: 10,
                   min_item_rows: [items + 1, 3].max, row_pad: [4, 6])
     when :ultra
       base.merge!(
         margin: [28, 36, 22, 36], gap: 7, body: 7, small: 6, table: 6.5, display: 16,
-        logo: 32, qr: 40, party_min: 52, party_top_margin: 8, divider_top_margin: 8,
+        logo: 32, qr: 40, party_body: 8.5, party_header: 8,
+        party_min: 62, party_top_margin: 8, divider_top_margin: 8,
         min_item_rows: items + 1, row_pad: [3, 5]
       )
     end
@@ -128,17 +132,12 @@ class PdfGenerator
     left_w = w * 0.52
     right_w = w - left_w
 
-    company = ["<b>#{escape_html(@user.business_name.presence || 'Business Name')}</b>"]
-    company << "<color rgb='#{COLORS[:muted]}'>#{escape_html(@user.address)}</color>" if @user.address.present?
-    company << "<color rgb='#{COLORS[:muted]}'>NTN/CNIC: #{escape_html(@user.ntn_cnic)}</color>" if @user.ntn_cnic.present?
-
     right_html = [
       "<color rgb='#{COLORS[:accent]}'>SALES TAX INVOICE</color>",
-      "<font size='#{layout[:display].to_i}'><b>#{escape_html(@invoice.invoice_number)}</b></font>",
+      "<color rgb='#{COLORS[:muted]}'>Invoice No.:</color> <b>#{escape_html(@invoice.pdf_display_number)}</b>",
       "<color rgb='#{COLORS[:muted]}'>Date:</color> <b>#{@invoice.invoice_date.strftime('%d %b %Y')}</b>",
       "<color rgb='#{COLORS[:muted]}'>Type:</color> <b>#{escape_html(@invoice.invoice_type)}</b>",
-      "<color rgb='#{COLORS[:muted]}'>FBR No.:</color> <b>#{escape_html(@invoice.fbr_invoice_id.presence || 'Pending')}</b>",
-      "<color rgb='#{COLORS[:muted]}'>Scenario:</color> <b>#{escape_html(@invoice.scenario_id.presence || 'SN001')}</b>"
+      "<color rgb='#{COLORS[:muted]}'>FBR No.:</color> <b>#{escape_html(@invoice.fbr_invoice_id.presence || 'Pending')}</b>"
     ].join("\n")
 
     if company_logo_path
@@ -146,16 +145,12 @@ class PdfGenerator
         [{ image: company_logo_path, fit: [layout[:logo], layout[:logo]], position: :left, vposition: :top,
            borders: [], padding: [0, 10, 0, 0] },
          { content: right_html, inline_format: true, align: :right, size: layout[:body],
-           leading: 5, borders: [], padding: [0, 0, 0, 8], valign: :top }],
-        [{ content: company.join("\n"), inline_format: true, size: layout[:body], leading: 4,
-           borders: [], padding: [8, 0, 0, 0], colspan: 2 }]
+           leading: 5, borders: [], padding: [0, 0, 0, 8], valign: :top }]
       ], column_widths: [layout[:logo] + 10, w - layout[:logo] - 10], width: w, cell_style: { borders: [] })
     else
       pdf.table([
-        [{ content: company.join("\n"), inline_format: true, size: layout[:body], leading: 4,
-           borders: [], padding: [0, 8, 0, 0], valign: :top },
-         { content: right_html, inline_format: true, align: :right, size: layout[:body],
-           leading: 5, borders: [], padding: [0, 0, 0, 8], valign: :top }]
+        [{ content: right_html, inline_format: true, align: :right, size: layout[:body],
+           leading: 5, borders: [], padding: [0, 0, 0, 0], colspan: 2 }]
       ], column_widths: [left_w, right_w], width: w, cell_style: { borders: [] })
     end
   end
@@ -178,30 +173,40 @@ class PdfGenerator
   def render_parties(pdf)
     pdf.move_down layout[:party_top_margin]
     w = pdf.bounds.width
-    half = w / 2.0
+    party_gap = 14
+    box_w = (w - party_gap) / 2.0
 
     pdf.table([
-      [party_header_cell('Sender Information'), party_header_cell('Buyer Information')],
-      [party_body_cell(seller_fields), party_body_cell(buyer_fields)]
-    ], column_widths: [half, half], width: w, cell_style: { border_color: COLORS[:line], border_width: 0.75 }) do |t|
+      [party_header_cell('Sender Information'), party_spacer_cell, party_header_cell('Buyer Information')],
+      [party_body_cell(seller_fields), party_spacer_cell, party_body_cell(buyer_fields)]
+    ], column_widths: [box_w, party_gap, box_w], width: w,
+       cell_style: { border_color: COLORS[:line], border_width: 0.75 }) do |t|
       t.row(0).background_color = COLORS[:accent]
       t.row(0).text_color = COLORS[:white]
       t.row(0).font_style = :bold
-      t.row(0).size = layout[:label]
-      t.row(0).padding = [9, 14]
+      t.row(0).size = layout[:party_header]
+      t.row(0).padding = [10, 14]
       t.row(0).borders = [:top, :left, :right]
 
       t.row(1).background_color = COLORS[:white]
-      t.row(1).padding = [14, 16]
+      t.row(1).padding = [16, 16]
       t.row(1).height = layout[:party_min]
       t.row(1).valign = :top
       t.row(1).borders = [:bottom, :left, :right]
 
       t.columns(0).padding = [9, 8, 14, 14]
-      t.columns(1).padding = [9, 14, 14, 8]
+      t.columns(2).padding = [9, 14, 14, 8]
+
+      t.column(1).borders = []
+      t.column(1).background_color = COLORS[:white]
+      t.column(1).padding = [0, 0]
     end
 
     gap(pdf)
+  end
+
+  def party_spacer_cell
+    { content: '', borders: [], background_color: COLORS[:white], padding: [0, 0] }
   end
 
   def party_header_cell(title)
@@ -212,22 +217,23 @@ class PdfGenerator
     {
       content: party_body_html(fields),
       inline_format: true,
-      size: layout[:body],
-      leading: 5
+      size: layout[:party_body],
+      leading: 6
     }
   end
 
   def party_body_html(fields)
-    name_size = layout[:body].to_i + 1.5
-    lines = ["<font size='#{name_size.to_i}'><b><color rgb='#{COLORS[:ink]}'>#{escape_html(fields[:name].presence || '—')}</color></b></font>"]
+    body_size = layout[:party_body]
+    name_size = body_size.to_i + 2
+    lines = ["<font size='#{name_size}'><b><color rgb='#{COLORS[:ink]}'>#{escape_html(fields[:name].presence || '—')}</color></b></font>"]
+
+    lines << party_detail_row('NTN/CNIC', fields[:ntn])
 
     if fields[:address].present?
       lines << "<color rgb='#{COLORS[:muted]}'>#{escape_html(fields[:address])}</color>"
     end
 
-    lines << ''
-    lines << party_detail_row('NTN/CNIC', fields[:ntn])
-    lines << party_detail_row('Province', fields[:province])
+    lines << party_detail_row('Province', fields[:province]) if fields.fetch(:show_province, true)
     lines << party_detail_row('Registration', fields[:extra]) if fields[:extra].present?
 
     lines.join("\n")
@@ -269,12 +275,14 @@ class PdfGenerator
       t.columns(0).width = 24
       t.columns(0).align = :center
       t.columns(2).width = 52
+      t.columns(3).width = 46
       t.columns(3).align = :right
-      t.columns(3).width = 28
-      t.columns(4).width = 58
+      t.columns(3).overflow = :truncate
+      t.columns(4).width = 56
       t.columns(4).align = :center
-      t.columns(5).align = :center
-      t.columns(5).width = 28
+      t.columns(5).width = 46
+      t.columns(5).align = :right
+      t.columns(5).overflow = :truncate
       t.columns(6..8).align = :right
 
       t.rows(1..-1).borders = [:bottom]
@@ -424,9 +432,9 @@ class PdfGenerator
 
   def seller_fields
     party_fields(
-      name: @user.business_name,
-      address: @user.address,
-      ntn: @user.ntn_cnic,
+      name: @invoice.seller_name.presence || @user.business_name,
+      address: @invoice.seller_address.presence || @user.address,
+      ntn: @invoice.seller_ntn.presence || @user.ntn_cnic,
       province: @invoice.seller_province,
       extra: nil
     )
@@ -438,7 +446,8 @@ class PdfGenerator
       address: @invoice.buyer_address,
       ntn: @invoice.buyer_ntn,
       province: @invoice.buyer_province,
-      extra: @invoice.buyer_registration_type
+      extra: @invoice.buyer_registration_type,
+      show_province: false
     )
   end
 
@@ -467,7 +476,7 @@ class PdfGenerator
     File.binwrite(path, qr.as_png(size: 240, border_modules: 1).to_s)
     path.to_s
   rescue StandardError => e
-    Rails.logger.error "PDF QR generation failed: #{e.message}"
+    AppLogger.error('pdf.qr_generation_failed', exception: e, invoice_id: @invoice.id)
     nil
   end
 
@@ -482,8 +491,8 @@ class PdfGenerator
     FBR_BRANDING_IMAGE.to_s if File.exist?(FBR_BRANDING_IMAGE)
   end
 
-  def party_fields(name:, address:, ntn:, province:, extra:)
-    { name: name, address: address, ntn: ntn, province: province, extra: extra }
+  def party_fields(name:, address:, ntn:, province:, extra:, show_province: true)
+    { name: name, address: address, ntn: ntn, province: province, extra: extra, show_province: show_province }
   end
 
   def line_exclusive(item)

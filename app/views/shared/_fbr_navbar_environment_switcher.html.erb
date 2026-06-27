@@ -1,6 +1,6 @@
 <%# Compact Sandbox / Production toggle for navbar — taxpayers only %>
 <% if user_signed_in? && current_user.taxpayer? && current_user.can_manage_invoices? %>
-  <li class="nav-item d-flex align-items-center fbr-env-switcher-wrap">
+  <li class="nav-item d-flex align-items-center fbr-env-switcher-wrap" id="fbr-env-switcher">
     <div class="fbr-env-switcher" role="group" aria-label="FBR submission environment">
       <span class="fbr-env-switcher__label d-none d-xl-inline">FBR</span>
       <% FbrConfiguration::ENVIRONMENTS.each do |environment| %>
@@ -14,13 +14,19 @@
             <%= environment == 'production' ? 'Production' : 'Sandbox' %>
           </span>
         <% else %>
-          <%= link_to preferred_environment_profile_path(environment: environment),
-              data: {
-                turbo_method: :patch,
-                turbo_confirm: (environment == 'production' && !active ? 'Switch to Production? Live FBR submissions will be used.' : nil)
-              }.compact,
+          <% btn_data = {
+               fbr_environment: environment,
+               url: preferred_environment_profile_path(environment: environment),
+               fbr_env_switch: true
+             } %>
+          <% if environment == 'production' && !active %>
+            <% btn_data[:fbr_confirm] = 'Switch to Production? Live FBR submissions will be used.' %>
+          <% end %>
+          <%= button_tag type: "button",
+              data: btn_data,
               class: "fbr-env-switcher__btn #{'fbr-env-switcher__btn--active' if active} #{'fbr-env-switcher__btn--production' if environment == 'production' && active}",
-              title: "Use FBR #{environment.humanize}" do %>
+              title: "Use FBR #{environment.humanize}",
+              aria: { pressed: active } do %>
             <% if environment == 'production' %>
               <i class="fas fa-broadcast-tower"></i>
             <% else %>

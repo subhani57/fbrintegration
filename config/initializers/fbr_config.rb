@@ -2,7 +2,9 @@
 # FBR API Configuration — tokens must come from ENV / credentials (never hardcoded in production)
 
 if Rails.env.development? && ENV['FBR_SANDBOX_TOKEN'].blank?
-  Rails.logger.warn '[FBR] FBR_SANDBOX_TOKEN is not set. Set it in .env for sandbox API calls.'
+  Rails.application.config.after_initialize do
+    AppLogger.warn('fbr.config.sandbox_token_missing')
+  end
 end
 
 FBR_CONFIG = {

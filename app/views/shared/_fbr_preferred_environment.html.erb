@@ -15,8 +15,12 @@
           <%= environment.humanize %>
         </span>
       <% else %>
+        <% link_data = { turbo_method: :patch } %>
+        <% if environment == 'production' && user.default_fbr_environment != 'production' %>
+          <% link_data.merge!(confirm_link_data('Switch to Production? Live FBR submissions will be used.')) %>
+        <% end %>
         <%= link_to form_path_helper.call(environment),
-            data: { turbo_method: :patch },
+            data: link_data,
             class: "btn btn-sm #{user.default_fbr_environment == environment ? 'btn-primary' : 'btn-outline-primary'}" do %>
           <% if user.default_fbr_environment == environment %>
             <i class="fas fa-check-circle me-1"></i>

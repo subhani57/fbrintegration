@@ -27,7 +27,7 @@ module Api
           }, status: :unprocessable_entity
         end
       rescue StandardError => e
-        Rails.logger.error "Buyer validation error: #{e.message}"
+        AppLogger.error('api.buyer_validation.failed', exception: e, user_id: current_user&.id)
         render json: { error: 'Buyer verification failed. Try again later.' }, status: :internal_server_error
       end
 

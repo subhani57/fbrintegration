@@ -8,10 +8,10 @@ class InvoicesController < ApplicationController
   before_action :redirect_admin_from_taxpayer_portal!
   before_action :ensure_taxpayer_portal!
   before_action :ensure_taxpayer!, only: [:new, :create, :edit, :update, :destroy, :submit, :validate, :bulk_submit, :cancel, :save_template]
-  before_action :set_invoice, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :download_pdf, :download_xml, :cancel, :save_template]
+  before_action :set_invoice, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :download_pdf, :download_xml, :cancel, :save_template, :sync_from_iris, :mark_cancelled_on_iris]
   before_action :load_buyer_companies, only: [:new, :create, :edit, :update]
   before_action :load_submitted_invoices, only: [:new, :create, :edit, :update]
-  before_action :authorize_invoice!, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :cancel, :save_template]
+  before_action :authorize_invoice!, only: [:show, :edit, :update, :destroy, :submit, :validate, :status, :cancel, :save_template, :sync_from_iris, :mark_cancelled_on_iris]
   before_action :ensure_editable, only: [:edit, :update, :destroy]
   before_action :ensure_fbr_submission_allowed!, only: [:submit, :validate]
 
@@ -21,10 +21,27 @@ class InvoicesController < ApplicationController
     per_page = [per_page, 100].min
 
     @invoices = policy_scope(Invoice)
-      .includes(:items)
-      .order(created_at: :desc)
-      .page(params[:page])
-      .per(per_page)
+      .order(invoice_date: :desc, created_at: :desc)
+
+    if params[:status].present?
+      @invoices = @invoices.where(status: params[:status])
+    end
+
+    if params[:q].present?
+      q = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q].strip)}%"
+      @invoices = @invoices.where(
+        <<~SQL.squish,
+          invoices.invoice_number ILIKE :q
+          OR invoices.pdf_invoice_number ILIKE :q
+          OR invoices.buyer_name ILIKE :q
+          OR invoices.buyer_ntn ILIKE :q
+          OR invoices.fbr_invoice_id ILIKE :q
+        SQL
+        q: q
+      )
+    end
+
+    @invoices = @invoices.page(params[:page]).per(per_page)
 
     respond_to do |format|
       format.html
@@ -52,7 +69,8 @@ class InvoicesController < ApplicationController
       invoice_type: 'Sale Invoice',
       scenario_id: Invoice::DEFAULT_SCENARIO_ID,
       buyer_province: Company::DEFAULT_PROVINCE,
-      buyer_registration_type: Invoice::DEFAULT_BUYER_REGISTRATION_TYPE
+      buyer_registration_type: Invoice::DEFAULT_BUYER_REGISTRATION_TYPE,
+      pdf_invoice_number: Invoice.next_sequence_number_for(current_user)
     )
     @invoice.items.build
     apply_seller_defaults(@invoice)
@@ -152,6 +170,8 @@ class InvoicesController < ApplicationController
   end
 
   def status
+    recover_stuck_processing! if params[:recover] == "1"
+
     render json: {
       status: @invoice.status,
       fbr_status: @invoice.fbr_status,
@@ -168,6 +188,29 @@ class InvoicesController < ApplicationController
     else
       redirect_to @invoice, alert: 'This invoice cannot be cancelled.'
     end
+  end
+
+  def sync_from_iris
+    unless @invoice.fbr_invoice_id.present?
+      redirect_to @invoice, alert: 'No FBR invoice number to sync.'
+      return
+    end
+
+    result = Fbr::IrisInvoiceService.new(current_user).sync_invoice!(@invoice)
+    if result[:success]
+      notice = result[:notice].presence || "Synced from IRIS (#{result[:source]})."
+      redirect_to @invoice, notice: notice
+    elsif result[:api_unavailable]
+      redirect_to @invoice, alert: result[:error_message]
+    else
+      redirect_to @invoice, alert: result[:error_message]
+    end
+  end
+
+  def mark_cancelled_on_iris
+    @invoice.apply_iris_cancellation!(message: 'Cancelled on FBR IRIS (confirmed manually).')
+    AuditLog.record!(user: current_user, action: 'invoice.iris_cancelled', auditable: @invoice, request: request)
+    redirect_to @invoice, notice: 'Invoice marked as cancelled on IRIS.'
   end
 
   def save_template
@@ -188,6 +231,8 @@ class InvoicesController < ApplicationController
       redirect_back fallback_location: invoices_path, alert: 'No invoices selected.'
       return
     end
+
+    current_user.fbr_configurations.load
 
     if (reason = Fbr::EnvironmentGuard.submission_blocked_reason(current_user))
       redirect_back fallback_location: invoices_path, alert: reason
@@ -237,7 +282,23 @@ class InvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = current_user.invoices.find(params[:id])
+    @invoice = current_user.invoices.includes(:items).find(params[:id])
+  end
+
+  def recover_stuck_processing!
+    return unless @invoice.validating? || @invoice.submitting?
+    return if @invoice.updated_at > 15.seconds.ago
+
+    Rails.cache.fetch("invoice_status_recover:#{@invoice.id}", expires_in: 2.minutes) do
+      if @invoice.validating?
+        FbrValidationJob.perform_later(@invoice.id)
+      elsif @invoice.submitting?
+        FbrSubmissionJob.perform_later(@invoice.id)
+      end
+      true
+    end
+
+    @invoice.reload
   end
 
   def authorize_invoice!
@@ -252,7 +313,7 @@ class InvoicesController < ApplicationController
 
   def invoice_params
     params.require(:invoice).permit(
-      :invoice_date, :invoice_type, :original_invoice_id,
+      :invoice_date, :invoice_type, :original_invoice_id, :pdf_invoice_number,
       :seller_ntn, :seller_name, :seller_province, :seller_address,
       :buyer_ntn, :buyer_name, :buyer_province, :buyer_address,
       :buyer_registration_type, :buyer_company_id, :scenario_id,

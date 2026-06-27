@@ -59,6 +59,11 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
+  # Run FBR jobs during the request cycle by default so validate/submit complete
+  # without a separate worker. Set ACTIVE_JOB_ADAPTER=sidekiq when using bin/dev
+  # with the worker process and Redis.
+  config.active_job.queue_adapter = ENV.fetch("ACTIVE_JOB_ADAPTER", "inline").to_sym
+
   # Suppress logger output for asset requests.
   config.assets.quiet = true
 

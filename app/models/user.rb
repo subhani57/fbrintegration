@@ -44,7 +44,12 @@ class User < ApplicationRecord
   end
 
   def configuration_for(environment)
-    fbr_configurations.find_by(environment: environment.to_s)
+    env = environment.to_s
+    if fbr_configurations.loaded?
+      fbr_configurations.find { |config| config.environment == env }
+    else
+      fbr_configurations.find_by(environment: env)
+    end
   end
 
   def active_configuration(environment = default_fbr_environment)

@@ -45,6 +45,15 @@ class InvoicePolicy < ApplicationPolicy
     user&.can_manage_invoices? && record.user_id == user.id
   end
 
+  def sync_from_iris?
+    user&.can_manage_invoices? && record.user_id == user.id && record.fbr_invoice_id.present?
+  end
+
+  def mark_cancelled_on_iris?
+    sync_from_iris? && !record.iris_cancelled? &&
+      (record.fbr_status == 'submitted' || %w[submitted approved].include?(record.status))
+  end
+
   def download_pdf?
     owner_or_viewer?
   end

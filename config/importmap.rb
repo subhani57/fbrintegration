@@ -1,6 +1,7 @@
 # Pin npm packages by running ./bin/importmap
 
 pin "application"
+pin "fbr_confirm_modal", to: "fbr_confirm_modal.js"
 pin "fbr_ui", to: "fbr_ui.js"
 pin "fbr_dialog", to: "fbr_dialog.js"
 pin "@hotwired/turbo-rails", to: "@hotwired--turbo-rails.js" # @8.0.20

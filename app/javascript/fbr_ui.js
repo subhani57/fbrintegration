@@ -4,10 +4,13 @@ let progressBar = null
 let progressInitialized = false
 
 export function initFbrUi() {
+  resetStuckFormControls()
   initProgressBar()
   initBootstrapComponents()
   initFlashNotifications()
   updateNavbarActiveLinks()
+  syncEnvironmentSwitcher()
+  initEnvironmentSwitcherVisibilitySync()
   initNavbarScroll()
   initRevealAnimations()
   initCountUpStats()
@@ -17,10 +20,18 @@ export function initFbrUi() {
 }
 
 export function prepareTurboCache() {
+  resetStuckFormControls()
   disposeBootstrapComponents()
   disposeTooltips()
   resetMarkedElements()
   destroyFlatpickrInstances()
+}
+
+function resetStuckFormControls() {
+  document.querySelectorAll("form.button_to button[disabled], form.button_to input[disabled]").forEach((el) => {
+    el.disabled = false
+    el.removeAttribute("disabled")
+  })
 }
 
 function resetMarkedElements() {
@@ -134,6 +145,33 @@ function updateNavbarActiveLinks() {
     const active = href === path || (href !== "/" && path.startsWith(`${href}/`))
     link.classList.toggle("active", active)
   })
+}
+
+export function syncEnvironmentSwitcher() {
+  const current = document.body.dataset.fbrEnvironment
+  const switcher = document.getElementById("fbr-env-switcher")
+  if (!current || !switcher) return
+
+  switcher.querySelectorAll("[data-fbr-environment]").forEach((el) => {
+    const env = el.dataset.fbrEnvironment
+    const active = env === current
+    el.classList.toggle("fbr-env-switcher__btn--active", active)
+    el.classList.toggle("fbr-env-switcher__btn--production", active && env === "production")
+  })
+}
+
+function initEnvironmentSwitcherVisibilitySync() {
+  if (window._fbrEnvVisibilityBound) return
+  window._fbrEnvVisibilityBound = true
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      syncEnvironmentSwitcher()
+    }
+  })
+
+  document.addEventListener("turbo:load", syncEnvironmentSwitcher)
+  document.addEventListener("turbo:render", syncEnvironmentSwitcher)
 }
 
 function destroyFlatpickrInstances() {

@@ -3,8 +3,8 @@ module Admin
     before_action :set_invoice, only: [:show, :download_pdf]
 
     def index
-      @invoices = Invoice.includes(:user, :items)
-        .order(created_at: :desc)
+      @invoices = Invoice.includes(:user)
+        .order(invoice_date: :desc, created_at: :desc)
         .page(params[:page])
         .per(30)
 
@@ -17,9 +17,17 @@ module Admin
       end
 
       if params[:q].present?
-        q = "%#{params[:q]}%"
-        @invoices = @invoices.where(
-          'invoice_number ILIKE :q OR buyer_name ILIKE :q OR buyer_ntn ILIKE :q',
+        q = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q].strip)}%"
+        @invoices = @invoices.joins(:user).where(
+          <<~SQL.squish,
+            invoices.invoice_number ILIKE :q
+            OR invoices.pdf_invoice_number ILIKE :q
+            OR invoices.buyer_name ILIKE :q
+            OR invoices.buyer_ntn ILIKE :q
+            OR invoices.fbr_invoice_id ILIKE :q
+            OR users.email ILIKE :q
+            OR users.business_name ILIKE :q
+          SQL
           q: q
         )
       end
@@ -47,7 +55,7 @@ module Admin
     private
 
     def set_invoice
-      @invoice = Invoice.find(params[:id])
+      @invoice = Invoice.includes(:items, :user).find(params[:id])
     end
   end
 end

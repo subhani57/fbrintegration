@@ -212,6 +212,17 @@
 
 .fbr-notify--danger .fbr-notify__timer { background: rgba(220, 53, 69, 0.25); }
 
+#fbr-ui-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 10040;
+  pointer-events: none;
+}
+
+#fbr-ui-portal .fbr-dialog-root--visible {
+  pointer-events: auto;
+}
+
 /* ── Custom confirm / alert dialog ── */
 .fbr-dialog-root {
   position: fixed;
@@ -221,6 +232,11 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  pointer-events: none;
+}
+
+.fbr-dialog-root--visible {
+  pointer-events: auto;
 }
 
 .fbr-dialog-root[hidden] { display: none !important; }

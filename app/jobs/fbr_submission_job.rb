@@ -5,7 +5,7 @@ class FbrSubmissionJob < ApplicationJob
   retry_on StandardError, wait: 1.minute, attempts: 3
 
   def perform(invoice_id, environment = nil)
-    invoice = Invoice.find(invoice_id)
+    invoice = Invoice.includes(:items, :user).find(invoice_id)
     return if invoice.cancelled? || invoice.fbr_invoice_id.present?
     return unless invoice.submitting? || invoice.validated?
 

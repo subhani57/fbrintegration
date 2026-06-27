@@ -1,0 +1,11 @@
+<%= turbo_stream.replace "fbr-env-switcher" do %>
+  <%= render "shared/fbr_navbar_environment_switcher" %>
+<% end %>
+
+<%= turbo_stream.replace "fbr-environment-banner" do %>
+  <%= render "shared/fbr_environment_banner" %>
+<% end %>
+
+<%= turbo_stream.update "fbr-flash-slot" do %>
+  <%= render "shared/flash_messages" %>
+<% end %>
