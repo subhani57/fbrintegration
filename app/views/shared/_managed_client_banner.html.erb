@@ -1,0 +1,7 @@
+<div class="alert alert-info py-2 mb-0 rounded-0 border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <span>
+    <i class="fas fa-user-tie me-1"></i>
+    Managing client: <strong><%= portal_user.email %></strong>
+  </span>
+  <%= button_to 'Exit client view', accountant_clear_path, method: :delete, class: 'btn btn-sm btn-outline-dark' %>
+</div>

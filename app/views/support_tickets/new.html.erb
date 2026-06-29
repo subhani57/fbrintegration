@@ -1,0 +1,9 @@
+<h1 class="fbr-page-header mb-4">New support ticket</h1>
+
+<%= simple_form_for @ticket do |f| %>
+  <%= f.input :subject %>
+  <%= f.input :body, as: :text, input_html: { rows: 6 } %>
+  <%= f.input :priority, collection: SupportTicket::PRIORITIES, include_blank: false %>
+  <%= f.button :submit, 'Submit ticket', class: 'btn btn-primary' %>
+  <%= link_to 'Cancel', support_tickets_path, class: 'btn btn-outline-secondary ms-2' %>
+<% end %>

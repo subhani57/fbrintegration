@@ -1,0 +1,28 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-user-tie text-primary"></i> Accountant Dashboard</h1>
+
+<% if @active_client %>
+  <div class="alert alert-info">
+    Currently managing <strong><%= @active_client.email %></strong>.
+    <%= link_to 'Go to client dashboard', dashboard_path, class: 'alert-link' %>
+    <%= button_to 'Clear', accountant_clear_path, method: :delete, class: 'btn btn-sm btn-outline-dark ms-2' %>
+  </div>
+<% end %>
+
+<div class="card">
+  <div class="card-header"><strong>Assigned clients</strong></div>
+  <table class="table mb-0">
+    <thead><tr><th>Client</th><th>Business</th><th>Subscription</th><th></th></tr></thead>
+    <tbody>
+      <% @clients.each do |client| %>
+        <tr>
+          <td><%= client.email %></td>
+          <td><%= client.business_name.presence || '—' %></td>
+          <td><%= client.subscription_status_label %></td>
+          <td>
+            <%= button_to 'Manage', accountant_switch_path(client_id: client.id), method: :post, class: 'btn btn-sm btn-primary' %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

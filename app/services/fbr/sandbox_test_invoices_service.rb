@@ -2,8 +2,10 @@
 
 module Fbr
   class SandboxTestInvoicesService
-    SCENARIO_IDS = %w[SN001 SN002 SN005 SN006 SN007 SN008].freeze
+    SCENARIO_IDS = %w[SN001 SN002 SN005 SN006 SN007 SN008 SN026 SN027 SN028].freeze
     LINE_VALUE = 1.0
+    # FBR sandbox samples for end-consumer (retailer) scenarios
+    END_CONSUMER_CNIC = '1000000000078'
 
     Result = Struct.new(:scenario_id, :name, :success, :fbr_invoice_id, :error_message, :invoice, :skipped, keyword_init: true) do
       def skipped?
@@ -179,8 +181,9 @@ module Fbr
         unit_price: unit_price,
         tax_rate: tax_rate,
         sales_tax: tax_amount,
-        total_value: value_excl.positive? ? value_excl : item_data[:fixedNotifiedValueOrRetailPrice].to_f,
-        sale_type: item_data[:saleType]
+        total_value: item_value_excl(item_data),
+        sale_type: item_data[:saleType],
+        sro_schedule_no: item_data[:sroScheduleNo].presence
       )
 
       invoice
@@ -199,8 +202,18 @@ module Fbr
         spec('SN007', 'Zero rated sale', 'Registered', '0225898', 'Nishat Chunian Limited',
              zero_rated_item),
         spec('SN008', 'Sale of 3rd schedule goods', 'Registered', '0225898', 'Nishat Chunian Limited',
-             third_schedule_item)
+             third_schedule_item),
+        retailer_spec('SN026', 'Sale to end consumer by retailers (standard rate)',
+                      retailer_standard_item),
+        retailer_spec('SN027', 'Sale to end consumer by retailers (3rd schedule goods)',
+                      retailer_third_schedule_item),
+        retailer_spec('SN028', 'Sale to end consumer by retailers (reduced rate)',
+                      retailer_reduced_rate_item)
       ]
+    end
+
+    def retailer_spec(scenario_id, name, item)
+      spec(scenario_id, name, 'Unregistered', END_CONSUMER_CNIC, 'End Consumer', item)
     end
 
     def spec(scenario_id, name, buyer_registration_type, buyer_ntn, buyer_name, item)
@@ -289,6 +302,60 @@ module Fbr
       )
     end
 
+    # SN026 — standard rate sale to end consumer (FBR: saleType = Goods at standard rate (default))
+    def retailer_standard_item
+      value_excl = LINE_VALUE
+      tax = sales_tax_for(value_excl, '18%')
+
+      base_item(
+        hs_code: '0101.2100',
+        description: 'Retail sale to end consumer (standard rate)',
+        rate: '18%',
+        sale_type: 'Goods at standard rate (default)',
+        value_excl: value_excl,
+        tax: tax
+      )
+    end
+
+    # SN027 — 3rd schedule goods to end consumer; tax on MRP (fixedNotifiedValueOrRetailPrice)
+    # FBR docs show valueSalesExcludingST: 0, but sandbox API rejects zero (error 0300) — use MRP in both fields like SN008.
+    def retailer_third_schedule_item
+      retail_price = 100.0
+      value_excl = retail_price
+      tax = sales_tax_for(retail_price, '18%')
+
+      base_item(
+        hs_code: '0101.2100',
+        description: 'Retail 3rd schedule product (MRP-based tax)',
+        rate: '18%',
+        sale_type: '3rd Schedule Goods',
+        value_excl: value_excl,
+        tax: tax,
+        retail_price: retail_price,
+        total_values: 0
+      )
+    end
+
+    # SN028 — reduced rate to end consumer (FBR Eighth Schedule sample)
+    def retailer_reduced_rate_item
+      retail_price = 100.0
+      value_excl = 99.01
+      tax = 0.99
+
+      base_item(
+        hs_code: '0101.2100',
+        description: 'Retail reduced rate product',
+        rate: '1%',
+        sale_type: 'Goods at Reduced Rate',
+        value_excl: value_excl,
+        tax: tax,
+        retail_price: retail_price,
+        total_values: retail_price,
+        sro_schedule_no: 'EIGHTH SCHEDULE Table 1',
+        sro_item_serial_no: '70'
+      )
+    end
+
     def base_item(hs_code:, description:, rate:, sale_type:, value_excl:, tax:, quantity: 1,
                   retail_price: 0, total_values: 0, sro_schedule_no: '', sro_item_serial_no: '',
                   extra_tax: '')
@@ -326,6 +393,13 @@ module Fbr
       return 0.0 if rate_str.casecmp('exempt').zero?
 
       rate_str.delete('%').to_f
+    end
+
+    def item_value_excl(item_data)
+      value = item_data[:valueSalesExcludingST].to_f
+      return value if value.positive?
+
+      item_data[:fixedNotifiedValueOrRetailPrice].to_f
     end
   end
 end

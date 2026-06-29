@@ -51,6 +51,7 @@ gem "kaminari"
 gem "chartkick"
 gem "groupdate"
 gem "whenever", require: false
+gem "rubyzip", require: false
 
 group :development, :test do
   gem "debug", platforms: %i[mri windows]
@@ -69,6 +70,7 @@ group :development do
   gem "binding_of_caller"
   gem "annotate"
   gem "bullet"
+  gem "letter_opener"
 end
 
 group :test do

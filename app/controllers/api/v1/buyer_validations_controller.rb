@@ -7,7 +7,7 @@ module Api
         ntn = params[:ntn].to_s.strip
         return render json: { error: 'NTN is required' }, status: :unprocessable_entity if ntn.blank?
 
-        result = Fbr::BuyerVerificationService.new(current_user).verify(ntn)
+        result = BuyerVerifications::CacheService.new(current_user).verify(ntn)
 
         if result[:success]
           render json: {

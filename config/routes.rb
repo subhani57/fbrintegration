@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   get 'reports', to: 'dashboard#reports'
 
   get 'pending_approval', to: 'pending_approval#show'
+  get 'subscription_required', to: 'subscription_required#show'
   resource :onboarding, only: [:show, :update], controller: 'onboarding'
   post 'onboarding/skip', to: 'onboarding#skip', as: :skip_onboarding
 
@@ -22,6 +23,29 @@ Rails.application.routes.draw do
 
   resources :webhooks, except: [:show]
   resources :invoice_templates, only: [:index, :destroy]
+  resources :support_tickets, only: [:index, :new, :create, :show] do
+    member { post :reply }
+  end
+  resources :api_keys, only: [:index, :create, :destroy]
+  resources :recurring_invoices do
+    member { post :run }
+  end
+  resource :invoice_import, only: [:new, :create] do
+    get :template
+  end
+  resources :invoice_archives, only: [:index] do
+    collection { post :export }
+  end
+  post 'compliance_exports', to: 'compliance_exports#create', as: :compliance_exports
+  resources :connector_configs, only: [:index, :create, :destroy] do
+    member { post :test }
+  end
+
+  namespace :accountant do
+    get 'dashboard', to: 'dashboard#index'
+    post 'switch', to: 'dashboard#switch'
+    delete 'clear', to: 'dashboard#clear'
+  end
   
   resources :invoices do
     member do
@@ -72,6 +96,19 @@ Rails.application.routes.draw do
         patch :approve
       end
     end
+    resources :subscriptions, only: [:index, :show] do
+      member do
+        patch :mark_paid
+      end
+    end
+    get 'subscription_payments/:payment_id/receipt', to: 'subscriptions#receipt', as: :subscription_payment_receipt
+    resources :audit_logs, only: [:index]
+    get 'health', to: 'health#show'
+    resources :support_tickets, only: [:index, :show, :update] do
+      member { post :reply }
+    end
+    resources :subscription_plans, only: [:index, :update]
+    resources :accountant_clients, only: [:index, :create, :destroy]
     resources :invoices, only: [:index, :show] do
       member do
         get :download_pdf
@@ -104,6 +141,10 @@ Rails.application.routes.draw do
         end
       end
       resources :buyer_validations, only: [:create]
+    end
+
+    namespace :v2 do
+      resources :invoices, only: [:index, :show, :create]
     end
   end
   

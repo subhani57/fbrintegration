@@ -1,0 +1,30 @@
+<%= form_with url: mark_paid_admin_subscription_path(taxpayer), method: :patch, local: true, class: 'subscription-paid-form' do %>
+  <div class="d-flex flex-wrap gap-1 mb-2">
+    <% Subscriptions::Manager::PERIOD_OPTIONS.each do |label, months| %>
+      <%= button_tag "+#{months}m",
+          type: 'submit',
+          name: 'period',
+          value: label,
+          class: 'btn btn-sm btn-outline-success',
+          data: { disable_with: '…' },
+          title: "Extend #{months} month(s) · #{format_pkr(months * User::MONTHLY_SUBSCRIPTION_FEE)}" %>
+    <% end %>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-end">
+    <div>
+      <label class="form-label small mb-1" for="active_until_<%= taxpayer.id %>">Or active until</label>
+      <%= date_field_tag :active_until,
+          taxpayer.default_subscription_extension_date,
+          id: "active_until_#{taxpayer.id}",
+          class: 'form-control form-control-sm',
+          min: Date.current %>
+    </div>
+    <%= submit_tag 'Paid', class: 'btn btn-sm btn-success', data: { disable_with: 'Saving…' } %>
+  </div>
+  <small class="text-muted d-block mt-1">
+    <%= format_pkr(User::MONTHLY_SUBSCRIPTION_FEE) %> / month
+    <% if taxpayer.subscription_active? %>
+      · <%= taxpayer.subscription_days_remaining %> day(s) left
+    <% end %>
+  </small>
+<% end %>

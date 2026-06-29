@@ -57,13 +57,13 @@ class InvoicesController < ApplicationController
   end
 
   def new
-    @invoice = current_user.invoices.new(
+    @invoice = portal_user.invoices.new(
       invoice_date: Date.today,
       invoice_type: 'Sale Invoice',
       scenario_id: Invoice::DEFAULT_SCENARIO_ID,
       buyer_province: Company::DEFAULT_PROVINCE,
       buyer_registration_type: Invoice::DEFAULT_BUYER_REGISTRATION_TYPE,
-      pdf_invoice_number: Invoice.next_sequence_number_for(current_user)
+      pdf_invoice_number: Invoice.next_sequence_number_for(portal_user)
     )
     @invoice.items.build
     apply_seller_defaults(@invoice)
@@ -72,7 +72,7 @@ class InvoicesController < ApplicationController
   end
 
   def create
-    @invoice = current_user.invoices.new(invoice_params)
+    @invoice = portal_user.invoices.new(invoice_params)
     authorize @invoice
 
     if @invoice.save
@@ -151,7 +151,7 @@ class InvoicesController < ApplicationController
     AuditLog.record!(user: current_user, action: 'invoice.validate_queued', auditable: @invoice, request: request)
     redirect_to @invoice, notice: 'Invoice validation queued. This page will update automatically.'
   rescue AASM::InvalidTransition
-    service = Fbr::ApiService.new(current_user, current_user.default_fbr_environment.to_sym)
+    service = Fbr::ApiService.new(portal_user, portal_user.default_fbr_environment.to_sym)
     result = service.validate_invoice(@invoice)
     if result[:success]
       @invoice.safely_mark_validated!
@@ -189,7 +189,7 @@ class InvoicesController < ApplicationController
       return
     end
 
-    result = Fbr::IrisInvoiceService.new(current_user).sync_invoice!(@invoice)
+    result = Fbr::IrisInvoiceService.new(portal_user).sync_invoice!(@invoice)
     if result[:success]
       notice = result[:notice].presence || "Synced from IRIS (#{result[:source]})."
       redirect_to @invoice, notice: notice
@@ -225,14 +225,14 @@ class InvoicesController < ApplicationController
       return
     end
 
-    current_user.fbr_configurations.load
+    portal_user.fbr_configurations.load
 
-    if (reason = Fbr::EnvironmentGuard.submission_blocked_reason(current_user))
+    if (reason = Fbr::EnvironmentGuard.submission_blocked_reason(portal_user))
       redirect_back fallback_location: invoices_path, alert: reason
       return
     end
 
-    invoices = current_user.invoices.where(id: invoice_ids, status: %w[draft validated failed])
+    invoices = portal_user.invoices.where(id: invoice_ids, status: %w[draft validated failed])
     queued_count = 0
     skipped_count = 0
 
@@ -242,13 +242,17 @@ class InvoicesController < ApplicationController
         next
       end
 
-      if Fbr::EnvironmentGuard.submission_blocked_reason(current_user, invoice: invoice)
+      if Fbr::EnvironmentGuard.submission_blocked_reason(portal_user, invoice: invoice)
         skipped_count += 1
         next
       end
 
-      invoice.submit_to_fbr! if invoice.may_submit_to_fbr?
+      next unless invoice.may_submit_to_fbr?
+
+      invoice.submit_to_fbr!
       queued_count += 1
+    rescue AASM::InvalidTransition
+      skipped_count += 1
     end
 
     notice = "#{queued_count} invoice(s) queued for FBR submission."
@@ -268,7 +272,7 @@ class InvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = current_user.invoices.includes(:items).find(params[:id])
+    @invoice = portal_user.invoices.includes(:items).find(params[:id])
   end
 
   def recover_stuck_processing!
@@ -312,38 +316,38 @@ class InvoicesController < ApplicationController
   end
 
   def apply_seller_defaults(invoice)
-    invoice.seller_name = current_user.business_name.presence || current_user.email
-    invoice.seller_ntn = current_user.ntn_cnic
-    invoice.seller_province = current_user.seller_province.presence || Company::DEFAULT_PROVINCE
-    invoice.seller_address = current_user.address.to_s.presence || 'Seller Address'
+    invoice.seller_name = portal_user.business_name.presence || portal_user.email
+    invoice.seller_ntn = portal_user.ntn_cnic
+    invoice.seller_province = portal_user.seller_province.presence || Company::DEFAULT_PROVINCE
+    invoice.seller_address = portal_user.address.to_s.presence || 'Seller Address'
   end
 
   def load_buyer_companies
-    @companies = current_user.companies.ordered
+    @companies = portal_user.companies.ordered
     @selected_buyer_company_id = resolve_selected_buyer_company_id
-    @invoice_templates = current_user.invoice_templates.ordered
+    @invoice_templates = portal_user.invoice_templates.ordered
   end
 
   def load_submitted_invoices
-    @submitted_invoices = current_user.invoices.where.not(fbr_invoice_id: nil).order(invoice_date: :desc).limit(50)
+    @submitted_invoices = portal_user.invoices.where.not(fbr_invoice_id: nil).order(invoice_date: :desc).limit(50)
   end
 
   def apply_template_if_requested(invoice)
-    template = current_user.invoice_templates.find_by(id: params[:template_id])
+    template = portal_user.invoice_templates.find_by(id: params[:template_id])
     template&.apply_to_invoice(invoice)
   end
 
   def find_default_buyer_company
-    last_invoice = current_user.invoices.order(created_at: :desc).first
+    last_invoice = portal_user.invoices.order(created_at: :desc).first
     return nil unless last_invoice
 
     if last_invoice.buyer_company_id.present?
-      return current_user.companies.find_by(id: last_invoice.buyer_company_id)
+      return portal_user.companies.find_by(id: last_invoice.buyer_company_id)
     end
 
     return nil if last_invoice.buyer_ntn.blank?
 
-    current_user.companies.find_by(ntn: last_invoice.buyer_ntn)
+    portal_user.companies.find_by(ntn: last_invoice.buyer_ntn)
   end
 
   def apply_default_buyer_company(invoice)

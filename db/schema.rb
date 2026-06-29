@@ -10,9 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "accountant_clients", force: :cascade do |t|
+    t.bigint "accountant_id", null: false
+    t.bigint "client_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["accountant_id", "client_id"], name: "index_accountant_clients_on_accountant_id_and_client_id", unique: true
+    t.index ["accountant_id"], name: "index_accountant_clients_on_accountant_id"
+    t.index ["client_id"], name: "index_accountant_clients_on_client_id"
+  end
+
+  create_table "api_keys", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "last_used_at"
+    t.string "name", null: false
+    t.string "token_digest", null: false
+    t.string "token_prefix", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["token_digest"], name: "index_api_keys_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_api_keys_on_user_id"
+  end
 
   create_table "audit_logs", force: :cascade do |t|
     t.string "action", null: false
@@ -23,7 +46,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.json "metadata", default: {}
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.index ["action", "created_at"], name: "index_audit_logs_on_action_and_created_at"
     t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable_type_and_auditable_id"
+    t.index ["created_at"], name: "index_audit_logs_on_created_at"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
@@ -37,10 +62,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.index ["business_nature", "sector"], name: "index_business_scenario_mappings_on_business_nature_and_sector", unique: true
   end
 
+  create_table "buyer_verification_caches", force: :cascade do |t|
+    t.string "atl_status"
+    t.datetime "created_at", null: false
+    t.string "ntn", null: false
+    t.boolean "registered", default: false
+    t.string "registration_type"
+    t.json "response_data", default: {}
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.date "verified_on", null: false
+    t.index ["user_id", "ntn", "verified_on"], name: "index_buyer_verifications_on_user_ntn_date", unique: true
+    t.index ["user_id"], name: "index_buyer_verification_caches_on_user_id"
+  end
+
   create_table "companies", force: :cascade do |t|
     t.text "address"
+    t.string "atl_status"
+    t.datetime "atl_verified_at"
     t.datetime "created_at", null: false
     t.string "email"
+    t.string "fbr_registration_type"
     t.string "name", null: false
     t.string "ntn", null: false
     t.string "phone"
@@ -51,6 +93,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.index ["user_id", "name"], name: "index_companies_on_user_id_and_name"
     t.index ["user_id", "ntn"], name: "index_companies_on_user_id_and_ntn", unique: true
     t.index ["user_id"], name: "index_companies_on_user_id"
+  end
+
+  create_table "connector_configs", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "provider", null: false
+    t.json "settings", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id", "provider"], name: "index_connector_configs_on_user_id_and_provider"
+    t.index ["user_id"], name: "index_connector_configs_on_user_id"
   end
 
   create_table "fbr_configurations", force: :cascade do |t|
@@ -182,6 +236,76 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
+  create_table "recurring_invoices", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.bigint "buyer_company_id"
+    t.datetime "created_at", null: false
+    t.string "frequency", default: "monthly", null: false
+    t.bigint "invoice_template_id"
+    t.date "last_run_on"
+    t.string "name", null: false
+    t.date "next_run_on", null: false
+    t.json "template_data", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["buyer_company_id"], name: "index_recurring_invoices_on_buyer_company_id"
+    t.index ["invoice_template_id"], name: "index_recurring_invoices_on_invoice_template_id"
+    t.index ["user_id", "active"], name: "index_recurring_invoices_on_user_id_and_active"
+    t.index ["user_id"], name: "index_recurring_invoices_on_user_id"
+  end
+
+  create_table "subscription_payments", force: :cascade do |t|
+    t.date "active_until", null: false
+    t.decimal "amount", precision: 10, scale: 2, default: "1000.0", null: false
+    t.datetime "created_at", null: false
+    t.text "notes"
+    t.string "receipt_number"
+    t.bigint "recorded_by_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["receipt_number"], name: "index_subscription_payments_on_receipt_number", unique: true
+    t.index ["recorded_by_id"], name: "index_subscription_payments_on_recorded_by_id"
+    t.index ["user_id", "created_at"], name: "index_subscription_payments_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_subscription_payments_on_user_id"
+  end
+
+  create_table "subscription_plans", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.json "features", default: {}, null: false
+    t.integer "invoice_limit"
+    t.decimal "monthly_fee", precision: 10, scale: 2, default: "1000.0", null: false
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.index ["slug"], name: "index_subscription_plans_on_slug", unique: true
+  end
+
+  create_table "support_ticket_replies", force: :cascade do |t|
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.boolean "staff_reply", default: false, null: false
+    t.bigint "support_ticket_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["support_ticket_id"], name: "index_support_ticket_replies_on_support_ticket_id"
+    t.index ["user_id"], name: "index_support_ticket_replies_on_user_id"
+  end
+
+  create_table "support_tickets", force: :cascade do |t|
+    t.bigint "assigned_admin_id"
+    t.text "body", null: false
+    t.datetime "created_at", null: false
+    t.string "priority", default: "normal", null: false
+    t.string "status", default: "open", null: false
+    t.string "subject", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["assigned_admin_id"], name: "index_support_tickets_on_assigned_admin_id"
+    t.index ["status"], name: "index_support_tickets_on_status"
+    t.index ["user_id"], name: "index_support_tickets_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.text "address"
     t.boolean "approved", default: false, null: false
@@ -201,6 +325,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.datetime "locked_at"
     t.string "ntn_cnic"
     t.integer "onboarding_step", default: 0, null: false
+    t.string "phone"
     t.string "preferred_fbr_environment", default: "sandbox", null: false
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
@@ -208,14 +333,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.string "role", default: "taxpayer", null: false
     t.string "seller_province", default: "Punjab"
     t.integer "sign_in_count", default: 0, null: false
+    t.boolean "sms_notifications", default: false, null: false
+    t.date "subscription_active_until"
+    t.bigint "subscription_plan_id"
     t.string "unconfirmed_email"
     t.string "unlock_token"
     t.datetime "updated_at", null: false
+    t.boolean "whatsapp_notifications", default: false, null: false
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["preferred_fbr_environment"], name: "index_users_on_preferred_fbr_environment"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
+    t.index ["subscription_active_until"], name: "index_users_on_subscription_active_until"
+    t.index ["subscription_plan_id"], name: "index_users_on_subscription_plan_id"
     t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true
   end
 
@@ -230,8 +361,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
     t.index ["user_id"], name: "index_webhooks_on_user_id"
   end
 
+  add_foreign_key "accountant_clients", "users", column: "accountant_id"
+  add_foreign_key "accountant_clients", "users", column: "client_id"
+  add_foreign_key "api_keys", "users"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "buyer_verification_caches", "users"
   add_foreign_key "companies", "users"
+  add_foreign_key "connector_configs", "users"
   add_foreign_key "fbr_configurations", "users"
   add_foreign_key "fbr_logs", "invoices"
   add_foreign_key "fbr_logs", "users"
@@ -241,5 +377,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_27_222403) do
   add_foreign_key "invoices", "invoices", column: "original_invoice_id"
   add_foreign_key "invoices", "users"
   add_foreign_key "notifications", "users"
+  add_foreign_key "recurring_invoices", "companies", column: "buyer_company_id"
+  add_foreign_key "recurring_invoices", "invoice_templates"
+  add_foreign_key "recurring_invoices", "users"
+  add_foreign_key "subscription_payments", "users"
+  add_foreign_key "subscription_payments", "users", column: "recorded_by_id"
+  add_foreign_key "support_ticket_replies", "support_tickets"
+  add_foreign_key "support_ticket_replies", "users"
+  add_foreign_key "support_tickets", "users"
+  add_foreign_key "support_tickets", "users", column: "assigned_admin_id"
+  add_foreign_key "users", "subscription_plans"
   add_foreign_key "webhooks", "users"
 end

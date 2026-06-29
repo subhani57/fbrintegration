@@ -25,7 +25,7 @@ class Invoice < ApplicationRecord
   validates :buyer_address, presence: true, if: -> { status != 'draft' }
   validates :buyer_registration_type, presence: true, if: -> { status != 'draft' }
   validate :buyer_company_must_belong_to_user, if: -> { buyer_company_id.present? }
-  validate :original_invoice_required_for_debit_note, if: -> { invoice_type == 'Debit Note' }
+  validate :original_invoice_required_for_adjustment_note, if: -> { adjustment_note? }
   # Allow blank for draft invoices
   validates :total_amount, numericality: { greater_than: 0, allow_nil: true }
   validates :tax_amount, numericality: { greater_than_or_equal_to: 0, allow_nil: true }
@@ -42,16 +42,16 @@ class Invoice < ApplicationRecord
     state :failed
     state :cancelled
 
-    event :validate_invoice do
-      transitions from: [:draft, :failed], to: :validating, after_commit: :perform_validation
+    event :validate_invoice, after: :perform_validation do
+      transitions from: [:draft, :failed], to: :validating
     end
 
     event :mark_validated do
       transitions from: [:validating, :draft, :failed], to: :validated
     end
 
-    event :submit_to_fbr do
-      transitions from: [:validated, :draft, :failed], to: :submitting, after_commit: :queue_fbr_submission
+    event :submit_to_fbr, after: :queue_fbr_submission do
+      transitions from: [:validated, :draft, :failed], to: :submitting
     end
 
     event :mark_submitted do
@@ -125,13 +125,21 @@ class Invoice < ApplicationRecord
     }
     return if valid_items.empty?
     
-    net_amount = valid_items.sum { |item| 
-      (item.total_value || (item.quantity.to_f * item.unit_price.to_f)) 
-    }
-    tax_amount = valid_items.sum { |item| (item.sales_tax || 0) }
+    net_amount = valid_items.sum do |item|
+      item.total_value.presence || (item.quantity.to_f * item.unit_price.to_f).round(2)
+    end
+    tax_amount = valid_items.sum { |item| line_sales_tax_for(item) }
 
-    self.tax_amount = tax_amount
-    self.total_amount = net_amount + tax_amount
+    self.tax_amount = tax_amount.round(2)
+    self.total_amount = (net_amount + tax_amount).round(2)
+  end
+
+  def line_sales_tax_for(item)
+    return item.sales_tax.to_f if item.sales_tax.present?
+
+    line_total = item.total_value.presence || (item.quantity.to_f * item.unit_price.to_f)
+    rate = item.tax_rate.presence || InvoiceItem::DEFAULT_TAX_RATE
+    (line_total * rate.to_f / 100).round(2)
   end
 
   def generate_invoice_number
@@ -237,6 +245,14 @@ class Invoice < ApplicationRecord
     invoice_type == 'Debit Note'
   end
 
+  def credit_note?
+    invoice_type == 'Credit Note'
+  end
+
+  def adjustment_note?
+    debit_note? || credit_note?
+  end
+
   def original_invoice_fbr_number
     original_invoice&.fbr_invoice_id
   end
@@ -284,7 +300,7 @@ class Invoice < ApplicationRecord
     errors.add(:buyer_company_id, 'must be one of your saved companies')
   end
 
-  def original_invoice_required_for_debit_note
+  def original_invoice_required_for_adjustment_note
     return if original_invoice_id.blank?
 
     original = user.invoices.find_by(id: original_invoice_id)

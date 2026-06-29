@@ -36,97 +36,25 @@
       </button>
       
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav me-auto">
+        <ul class="navbar-nav me-auto fbr-main-nav">
           <% if user_signed_in? && current_user.can_access_taxpayer_portal? %>
-            <li class="nav-item">
-              <%= link_to dashboard_path, class: "nav-link #{'active' if current_page?(dashboard_path)}" do %>
-                <i class="fas fa-tachometer-alt"></i> Dashboard
-              <% end %>
-            </li>
-            <li class="nav-item">
-              <%= link_to invoices_path, class: "nav-link #{'active' if controller_name == 'invoices'}" do %>
-                <i class="fas fa-file-invoice"></i> Invoices
-              <% end %>
-            </li>
-            <li class="nav-item">
-              <%= link_to fbr_invoices_path, class: "nav-link #{'active' if controller_name == 'fbr_invoices'}" do %>
-                <i class="fas fa-cloud-download-alt"></i> FBR Downloads
-              <% end %>
-            </li>
-            <li class="nav-item">
-              <%= link_to reports_path, class: "nav-link #{'active' if current_page?(reports_path)}" do %>
-                <i class="fas fa-chart-bar"></i> Reports
-              <% end %>
-            </li>
-            <% if current_user.can_manage_invoices? %>
-              <li class="nav-item">
-                <%= link_to companies_path, class: "nav-link #{'active' if controller_name == 'companies'}" do %>
-                  <i class="fas fa-building"></i> Companies
-                <% end %>
-              </li>
-              <li class="nav-item">
-                <%= link_to profile_path, class: "nav-link #{'active' if controller_name == 'profiles'}" do %>
-                  <i class="fas fa-cogs"></i> Settings
-                <% end %>
-              </li>
-              <li class="nav-item">
-                <%= link_to invoice_templates_path, class: "nav-link #{'active' if controller_name == 'invoice_templates'}" do %>
-                  <i class="fas fa-copy"></i> Templates
-                <% end %>
-              </li>
-              <li class="nav-item">
-                <%= link_to webhooks_path, class: "nav-link #{'active' if controller_name == 'webhooks'}" do %>
-                  <i class="fas fa-plug"></i> Webhooks
-                <% end %>
-              </li>
-            <% end %>
-            <li class="nav-item">
-              <%= link_to notifications_path, class: "nav-link #{'active' if controller_name == 'notifications'}" do %>
-                <i class="fas fa-bell"></i> Notifications
-                <% unread = current_user.notifications.unread.count %>
-                <% if unread.positive? %><span class="badge bg-danger"><%= unread %></span><% end %>
-              <% end %>
-            </li>
+            <%= render 'shared/nav/taxpayer_nav' %>
           <% elsif user_signed_in? && current_user.admin? %>
+            <%= render 'shared/nav/admin_nav' %>
+          <% end %>
+        </ul>
+
+        <ul class="navbar-nav align-items-center gap-2 fbr-nav-actions">
+          <% if user_signed_in? && current_user.can_access_taxpayer_portal? && current_user.can_manage_invoices? %>
             <li class="nav-item">
-              <%= link_to admin_dashboard_path, class: "nav-link #{'active' if request.path.start_with?('/admin')}" do %>
-                <i class="fas fa-shield-alt"></i> Admin Portal
+              <%= link_to new_invoice_path, class: 'btn btn-light btn-sm fbr-nav-new-invoice' do %>
+                <i class="fas fa-plus me-1"></i> New Invoice
               <% end %>
             </li>
           <% end %>
-        </ul>
-        
-        <ul class="navbar-nav align-items-center gap-1">
-          <%= render 'shared/fbr_navbar_environment_switcher' %>
+          <%= render 'shared/fbr_navbar_environment_switcher' if user_signed_in? && current_user.can_access_taxpayer_portal? %>
           <% if user_signed_in? %>
-            <li class="nav-item dropdown" data-controller="navbar-dropdown">
-              <button type="button"
-                      class="nav-link dropdown-toggle btn btn-link border-0 text-start"
-                      id="userDropdown"
-                      data-navbar-dropdown-target="button"
-                      data-action="click->navbar-dropdown#toggle"
-                      aria-expanded="false"
-                      aria-haspopup="true">
-                <i class="fas fa-user-circle"></i> <%= current_user.email %>
-              </button>
-              <div class="dropdown-menu dropdown-menu-end" data-navbar-dropdown-target="menu">
-                <% if current_user.can_manage_invoices? %>
-                  <%= link_to profile_path, class: 'dropdown-item' do %>
-                    <i class="fas fa-building"></i> Business &amp; FBR Settings
-                  <% end %>
-                <% elsif current_user.admin? %>
-                  <%= link_to admin_dashboard_path, class: 'dropdown-item' do %>
-                    <i class="fas fa-shield-alt"></i> Admin Portal
-                  <% end %>
-                <% end %>
-                <div class="dropdown-divider"></div>
-                <%= link_to destroy_user_session_path,
-                    data: { turbo_method: :delete },
-                    class: 'dropdown-item' do %>
-                  <i class="fas fa-sign-out-alt me-2"></i> Logout
-                <% end %>
-              </div>
-            </li>
+            <%= render 'shared/nav/user_menu' %>
           <% else %>
             <li class="nav-item">
               <%= link_to 'Login', new_user_session_path, class: 'nav-link' %>
@@ -150,6 +78,9 @@
   <div id="fbr-environment-banner">
     <%= render 'shared/fbr_environment_banner' %>
   </div>
+
+  <%= render 'shared/subscription_expiry_banner' if user_signed_in? %>
+  <%= render 'shared/managed_client_banner' if user_signed_in? && managed_client? %>
 
   <!-- Main Content -->
   <div class="container-fluid mt-3 fbr-main-content">

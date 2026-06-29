@@ -32,6 +32,11 @@
         <i class="fas fa-check"></i> Approve account
       <% end %>
     <% end %>
+    <% if @user.taxpayer? %>
+      <%= link_to admin_subscription_path(@user), class: 'btn btn-outline-success' do %>
+        <i class="fas fa-credit-card"></i> Subscription
+      <% end %>
+    <% end %>
     <%= link_to edit_admin_user_path(@user), class: 'btn btn-primary' do %>
       <i class="fas fa-edit"></i> Edit User
     <% end %>
@@ -81,7 +86,7 @@
       <% if @user.taxpayer? %>
         <div class="card-footer small text-muted">
           <i class="fas fa-flask me-1"></i>
-          <strong>Send Test Invoices</strong> posts one sandbox invoice per scenario (SN001, SN002, SN005–SN008) to the <strong>sandbox</strong> API only. Each scenario is sent once — repeats are skipped. Not available when Production is the active environment.
+          <strong>Send Test Invoices</strong> posts one sandbox invoice per scenario (SN001, SN002, SN005–SN008, SN026–SN028) to the <strong>sandbox</strong> API only. Each scenario is sent once — repeats are skipped. Not available when Production is the active environment.
           <% if @sandbox_test_blocked_reason.present? %>
             <span class="text-danger d-block mt-1">
               <i class="fas fa-ban"></i> <%= @sandbox_test_blocked_reason %>

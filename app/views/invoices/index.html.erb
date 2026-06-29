@@ -42,8 +42,17 @@
 
     <% if @invoices.any? %>
       <% if current_user.can_manage_invoices? %>
-        <%= form_with url: bulk_submit_invoices_path, method: :post, local: true, id: 'bulk-submit-form' do %>
-          <%= render 'invoices/index_table', invoices: @invoices, bulk_select: true %>
+        <%= form_with url: bulk_submit_invoices_path, method: :post, local: true, id: 'bulk-submit-form',
+            data: confirm_form_data('Submit selected invoices to FBR?') do %>
+          <%= render 'invoices/index_table', invoices: @invoices, bulk_select: true, paginate: false %>
+        <% end %>
+        <% if @invoices.respond_to?(:total_count) %>
+          <%= render 'shared/pagination_footer',
+              collection: @invoices,
+              form_path: invoices_path,
+              per_options: [25, 50, 100],
+              item_label: 'invoices',
+              extra_params: params.permit(:q, :status).to_h.compact %>
         <% end %>
       <% else %>
         <%= render 'invoices/index_table', invoices: @invoices, bulk_select: false %>

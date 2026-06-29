@@ -1,0 +1,37 @@
+<%# Right-side account menu — shared by taxpayer and admin layouts %>
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <button type="button"
+          class="nav-link dropdown-toggle btn btn-link border-0 text-start fbr-user-menu-toggle"
+          id="userDropdown"
+          data-navbar-dropdown-target="button"
+          data-action="click->navbar-dropdown#toggle"
+          aria-expanded="false"
+          aria-haspopup="true">
+    <span class="fbr-user-avatar-nav"><i class="fas fa-user"></i></span>
+    <span class="d-none d-lg-inline ms-1"><%= current_user.email.truncate(28) %></span>
+  </button>
+  <div class="dropdown-menu dropdown-menu-end fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <h6 class="dropdown-header"><%= current_user.role.humanize %> account</h6>
+    <% if current_user.admin? %>
+      <%= nav_dropdown_item admin_dashboard_path, 'Admin dashboard', icon: 'fas fa-shield-alt', active: nav_admin_overview_active? %>
+    <% end %>
+    <% if current_user.can_manage_invoices? && !current_user.admin? %>
+      <%= nav_dropdown_item profile_path, 'Business & FBR settings', icon: 'fas fa-cogs', active: nav_controller?(:profiles) %>
+    <% end %>
+    <% if current_user.accountant? %>
+      <%= nav_dropdown_item accountant_dashboard_path, 'Client management', icon: 'fas fa-user-tie', active: nav_accountant_active? %>
+    <% end %>
+    <% if current_user.admin? %>
+      <%= nav_dropdown_divider %>
+      <%= link_to root_path, class: 'dropdown-item' do %>
+        <i class="fas fa-file-invoice-dollar fa-fw me-2"></i> Taxpayer portal
+      <% end %>
+    <% end %>
+    <div class="dropdown-divider"></div>
+    <%= link_to destroy_user_session_path,
+        data: { turbo_method: :delete },
+        class: 'dropdown-item text-danger' do %>
+      <i class="fas fa-sign-out-alt fa-fw me-2"></i> Logout
+    <% end %>
+  </div>
+</li>

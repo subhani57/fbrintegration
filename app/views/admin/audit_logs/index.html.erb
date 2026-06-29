@@ -1,0 +1,33 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-history text-primary"></i> Audit Logs</h1>
+
+<%= form_with url: admin_audit_logs_path, method: :get, local: true, class: 'row g-2 mb-4 align-items-end' do |f| %>
+  <div class="col-md-4">
+    <%= f.label :action_filter, 'Action', class: 'form-label' %>
+    <%= f.text_field :action_filter, value: params[:action_filter], class: 'form-control', placeholder: 'e.g. invoice.created' %>
+  </div>
+  <div class="col-md-3">
+    <%= f.label :user_id, 'User ID', class: 'form-label' %>
+    <%= f.number_field :user_id, value: params[:user_id], class: 'form-control' %>
+  </div>
+  <div class="col-md-2"><%= f.submit 'Filter', class: 'btn btn-primary w-100' %></div>
+<% end %>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Target</th><th>IP</th></tr></thead>
+      <tbody>
+        <% @logs.each do |log| %>
+          <tr>
+            <td class="text-nowrap small"><%= log.created_at.strftime('%d %b %Y %H:%M') %></td>
+            <td><%= log.user&.email || '—' %></td>
+            <td><code><%= log.action %></code></td>
+            <td class="small"><%= [log.auditable_type, log.auditable_id].compact.join('#') %></td>
+            <td class="small text-muted"><%= log.ip_address %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%= paginate @logs if defined?(paginate) %>

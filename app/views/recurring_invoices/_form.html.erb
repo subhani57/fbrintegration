@@ -1,0 +1,10 @@
+<%= simple_form_for recurring do |f| %>
+  <%= f.input :name %>
+  <%= f.input :frequency, collection: RecurringInvoice::FREQUENCIES, include_blank: false %>
+  <%= f.input :next_run_on, as: :date %>
+  <%= f.input :active %>
+  <%= f.input :buyer_company_id, collection: portal_user.companies.ordered, label_method: :name, value_method: :id, include_blank: 'Optional buyer company' %>
+  <%= f.input :invoice_template_id, collection: portal_user.invoice_templates.ordered, label_method: :name, value_method: :id, include_blank: 'Optional template' %>
+  <%= f.button :submit, class: 'btn btn-primary' %>
+  <%= link_to 'Cancel', recurring_invoices_path, class: 'btn btn-outline-secondary ms-2' %>
+<% end %>

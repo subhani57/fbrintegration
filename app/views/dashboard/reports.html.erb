@@ -26,6 +26,9 @@
           <%= f.submit 'Apply filter', class: 'btn btn-primary w-100' %>
         </div>
         <div class="col-md-3">
+          <%= button_to 'Compliance export', compliance_exports_path(start_date: @start_date, end_date: @end_date), method: :post, class: 'btn btn-outline-info w-100', form: { data: { turbo: false } } %>
+        </div>
+        <div class="col-md-3">
           <%= link_to 'Export CSV', reports_path(format: :csv, start_date: @start_date, end_date: @end_date), class: 'btn btn-outline-success w-100' %>
         </div>
       </div>

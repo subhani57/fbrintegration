@@ -1,0 +1,10 @@
+<% if @subscription_expiring_soon %>
+  <div class="alert alert-warning alert-dismissible fade show mb-0 rounded-0 border-0 border-bottom" role="alert">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    Your subscription expires in <strong><%= @subscription_days_remaining %></strong>
+    day<%= @subscription_days_remaining == 1 ? '' : 's' %>
+    (<%= current_user.subscription_active_until.strftime('%d %b %Y') %>).
+    Pay <%= format_pkr(User::MONTHLY_SUBSCRIPTION_FEE) %> to avoid interruption.
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+<% end %>

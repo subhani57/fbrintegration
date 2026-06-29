@@ -1,0 +1,75 @@
+<%# Taxpayer / viewer / accountant portal — categorized navbar dropdowns %>
+<li class="nav-item">
+  <%= link_to dashboard_path, class: "nav-link #{'active' if nav_controller?(:dashboard) && action_name == 'index'}" do %>
+    <i class="fas fa-tachometer-alt"></i> Dashboard
+  <% end %>
+</li>
+
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <%= nav_dropdown_toggle 'Invoicing', icon: 'fas fa-file-invoice', active: nav_invoicing_active? %>
+  <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <%= nav_dropdown_header 'Documents' %>
+    <%= nav_dropdown_item invoices_path, 'All invoices', icon: 'fas fa-list', active: nav_controller?(:invoices) %>
+    <%= nav_dropdown_item fbr_invoices_path, 'FBR downloads', icon: 'fas fa-cloud-download-alt', active: nav_controller?(:fbr_invoices) %>
+    <% if current_user.can_manage_invoices? %>
+      <%= nav_dropdown_divider %>
+      <%= nav_dropdown_header 'Bulk & automation' %>
+      <%= nav_dropdown_item new_invoice_import_path, 'Import CSV', icon: 'fas fa-file-csv', active: nav_controller?(:invoice_imports) %>
+      <%= nav_dropdown_item invoice_archives_path, 'Invoice archive', icon: 'fas fa-archive', active: nav_controller?(:invoice_archives) %>
+      <%= nav_dropdown_item recurring_invoices_path, 'Recurring schedules', icon: 'fas fa-redo', active: nav_controller?(:recurring_invoices) %>
+    <% end %>
+  </div>
+</li>
+
+<li class="nav-item">
+  <%= link_to reports_path, class: "nav-link #{'active' if nav_reports_active?}" do %>
+    <i class="fas fa-chart-bar"></i> Reports
+  <% end %>
+</li>
+
+<% if current_user.can_manage_invoices? %>
+  <li class="nav-item dropdown" data-controller="navbar-dropdown">
+    <%= nav_dropdown_toggle 'Business', icon: 'fas fa-building', active: nav_setup_active? %>
+    <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+      <%= nav_dropdown_header 'Profile & buyers' %>
+      <%= nav_dropdown_item companies_path, 'Buyer companies', icon: 'fas fa-building', active: nav_controller?(:companies) %>
+      <%= nav_dropdown_item profile_path, 'Business & FBR settings', icon: 'fas fa-cogs', active: nav_controller?(:profiles) %>
+      <%= nav_dropdown_divider %>
+      <%= nav_dropdown_header 'Templates' %>
+      <%= nav_dropdown_item invoice_templates_path, 'Invoice templates', icon: 'fas fa-copy', active: nav_controller?(:invoice_templates) %>
+    </div>
+  </li>
+
+  <li class="nav-item dropdown" data-controller="navbar-dropdown">
+    <%= nav_dropdown_toggle 'Integrations', icon: 'fas fa-plug', active: nav_integrations_active? %>
+    <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+      <%= nav_dropdown_header 'Connections' %>
+      <%= nav_dropdown_item connector_configs_path, 'Connectors', icon: 'fas fa-link', active: nav_controller?(:connector_configs) %>
+      <%= nav_dropdown_item webhooks_path, 'Webhooks', icon: 'fas fa-broadcast-tower', active: nav_controller?(:webhooks) %>
+      <% if current_user.taxpayer? %>
+        <%= nav_dropdown_divider %>
+        <%= nav_dropdown_header 'Developer' %>
+        <%= nav_dropdown_item api_keys_path, 'API keys', icon: 'fas fa-key', active: nav_controller?(:api_keys) %>
+      <% end %>
+    </div>
+  </li>
+<% end %>
+
+<% if current_user.accountant? %>
+  <li class="nav-item">
+    <%= link_to accountant_dashboard_path, class: "nav-link #{'active' if nav_accountant_active?}" do %>
+      <i class="fas fa-user-tie"></i> Clients
+    <% end %>
+  </li>
+<% end %>
+
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <% unread = current_user.notifications.unread.count %>
+  <%= nav_dropdown_toggle 'Help', icon: 'fas fa-life-ring', active: nav_help_active? %>
+  <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <%= nav_dropdown_item support_tickets_path, 'Support tickets', icon: 'fas fa-ticket-alt', active: nav_controller?(:support_tickets) %>
+    <%= nav_dropdown_item notifications_path, 'Notifications', icon: 'fas fa-bell',
+        active: nav_controller?(:notifications),
+        badge: (unread.positive? ? unread : nil) %>
+  </div>
+</li>

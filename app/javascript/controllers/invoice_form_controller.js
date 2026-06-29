@@ -150,7 +150,8 @@ export default class extends Controller {
 
     invoiceTypeEl.dataset.invoiceFormBound = "true"
     invoiceTypeEl.addEventListener("change", () => {
-      originalField.style.display = invoiceTypeEl.value === "Debit Note" ? "" : "none"
+      const isAdjustment = invoiceTypeEl.value === "Debit Note" || invoiceTypeEl.value === "Credit Note"
+      originalField.style.display = isAdjustment ? "" : "none"
     })
   }
 

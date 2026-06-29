@@ -121,4 +121,19 @@ module ApplicationHelper
       'Submit this invoice to FBR Sandbox?'
     end
   end
+
+  def subscription_status_badge(user)
+    return tag.span('—', class: 'text-muted') unless user.taxpayer?
+
+    case user.subscription_status
+    when :active
+      tag.span(user.subscription_active_until.strftime('%d %b %Y'), class: 'badge bg-success')
+    when :expiring_soon
+      tag.span("Expires in #{user.subscription_days_remaining}d", class: 'badge bg-warning text-dark')
+    when :never_paid
+      tag.span('Never paid', class: 'badge bg-secondary')
+    else
+      tag.span('Inactive', class: 'badge bg-danger')
+    end
+  end
 end

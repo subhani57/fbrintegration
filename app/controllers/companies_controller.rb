@@ -5,7 +5,7 @@ class CompaniesController < ApplicationController
   before_action :set_company, only: [:show, :edit, :update, :destroy]
 
   def index
-    @companies = current_user.companies.ordered
+    @companies = portal_user.companies.ordered
   end
 
   def show
@@ -13,11 +13,11 @@ class CompaniesController < ApplicationController
   end
 
   def new
-    @company = current_user.companies.build
+    @company = portal_user.companies.build
   end
 
   def create
-    @company = current_user.companies.build(company_params)
+    @company = portal_user.companies.build(company_params)
 
     if @company.save
       redirect_to companies_path, notice: 'Buyer company saved.'
@@ -45,7 +45,7 @@ class CompaniesController < ApplicationController
   private
 
   def set_company
-    @company = current_user.companies.find(params[:id])
+    @company = portal_user.companies.find(params[:id])
   end
 
   def company_params

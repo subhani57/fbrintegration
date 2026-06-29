@@ -1,0 +1,25 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-life-ring text-primary"></i> Support Tickets</h1>
+
+<%= form_with url: admin_support_tickets_path, method: :get, local: true, class: 'mb-4' do |f| %>
+  <%= f.select :status, options_for_select([['All', ''], *SupportTicket::STATUSES.map { |s| [s.humanize, s] }], params[:status]), {}, class: 'form-select w-auto d-inline-block' %>
+  <%= f.submit 'Filter', class: 'btn btn-primary btn-sm ms-2' %>
+<% end %>
+
+<div class="card">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Subject</th><th>User</th><th>Status</th><th>Priority</th><th>Updated</th><th></th></tr></thead>
+    <tbody>
+      <% @tickets.each do |ticket| %>
+        <tr>
+          <td><%= ticket.subject %></td>
+          <td><%= ticket.user.email %></td>
+          <td><span class="badge bg-secondary"><%= ticket.status %></span></td>
+          <td><%= ticket.priority %></td>
+          <td class="small"><%= ticket.updated_at.strftime('%d %b %Y') %></td>
+          <td><%= link_to 'View', admin_support_ticket_path(ticket), class: 'btn btn-sm btn-outline-primary' %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+<%= paginate @tickets if defined?(paginate) %>

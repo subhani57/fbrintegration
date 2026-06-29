@@ -1,0 +1,36 @@
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <div class="card border-warning">
+      <div class="card-body text-center py-5 px-4">
+        <i class="fas fa-credit-card fa-3x text-warning mb-3"></i>
+        <h2 class="mb-3">Subscription payment required</h2>
+        <p class="text-muted mb-2">
+          Please pay your monthly subscription of
+          <strong><%= format_pkr(User::MONTHLY_SUBSCRIPTION_FEE) %></strong>
+          to continue access to the FBR invoicing portal.
+        </p>
+        <% if current_user.subscription_active_until.present? %>
+          <p class="small text-muted mb-3">
+            Your access expired on <%= current_user.subscription_active_until.strftime('%d %B %Y') %>
+            (<%= time_ago_in_words(current_user.subscription_active_until) %> ago).
+          </p>
+        <% else %>
+          <p class="small text-muted mb-3">Your account does not have an active subscription yet.</p>
+        <% end %>
+        <% if @last_payment %>
+          <div class="alert alert-light text-start small mb-4">
+            <strong>Last payment:</strong> <%= format_pkr(@last_payment.amount) %>
+            on <%= @last_payment.created_at.strftime('%d %b %Y') %>
+            <% if @last_payment.notes.present? %>
+              <br><span class="text-muted"><%= @last_payment.notes %></span>
+            <% end %>
+          </div>
+        <% end %>
+        <p class="mb-4">Contact your administrator to record payment and reactivate your account.</p>
+        <%= button_to destroy_user_session_path, method: :delete, class: 'btn btn-outline-secondary' do %>
+          <i class="fas fa-sign-out-alt me-1"></i> Sign out
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

@@ -4,7 +4,7 @@
       <h1 class="h3 mb-0">
         <i class="fas fa-tachometer-alt text-primary"></i> Dashboard
       </h1>
-      <p class="text-muted mb-0">Welcome back, <%= current_user.business_name.presence || current_user.email %></p>
+      <p class="text-muted mb-0">Welcome back, <%= @user.business_name.presence || @user.email %></p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <%= link_to reports_path, class: 'btn btn-outline-primary' do %>
@@ -12,12 +12,56 @@
       <% end %>
       <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
         <i class="fas fa-plus"></i> New Invoice
-      <% end if current_user.can_manage_invoices? %>
+      <% end if @user.can_manage_invoices? %>
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-6 col-lg-3">
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-<%= @user.taxpayer? ? 5 : 4 %> g-3 mb-4">
+    <% if @user.taxpayer? %>
+      <div class="col">
+        <div class="card fbr-stat-card h-100 <%= @user.subscription_expiring_soon? ? 'border-warning' : (@user.subscription_expired? ? 'border-danger' : '') %>">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="text-muted mb-1">Subscription</h6>
+                <% if @user.subscription_active? %>
+                  <h3 class="mb-0 <%= @user.subscription_expiring_soon? ? 'text-warning' : 'text-success' %>" data-fbr-count="<%= @user.subscription_days_remaining %>">
+                    <%= @user.subscription_days_remaining %>
+                    <span class="fs-6 fw-normal text-muted">day<%= @user.subscription_days_remaining == 1 ? '' : 's' %> left</span>
+                  </h3>
+                  <p class="text-muted small mb-0 mt-2">
+                    Active until <%= @user.subscription_active_until.strftime('%d %b %Y') %>
+                  </p>
+                <% elsif @user.subscription_never_paid? %>
+                  <h3 class="mb-0 text-secondary fs-4">Not active</h3>
+                  <p class="text-muted small mb-0 mt-2">No payment recorded yet</p>
+                <% else %>
+                  <h3 class="mb-0 text-danger fs-4">Expired</h3>
+                  <p class="text-muted small mb-0 mt-2">
+                    <% if @user.subscription_active_until.present? %>
+                      Ended <%= @user.subscription_active_until.strftime('%d %b %Y') %>
+                    <% else %>
+                      Subscription required
+                    <% end %>
+                  </p>
+                <% end %>
+                <% if @user.subscription_expiring_soon? || @user.subscription_expired? %>
+                  <p class="small mb-0 mt-2">
+                    <%= link_to subscription_required_path, class: 'text-warning text-decoration-none' do %>
+                      <i class="fas fa-credit-card"></i> Renew — <%= format_pkr(@user.monthly_subscription_fee) %>/mo
+                    <% end %>
+                  </p>
+                <% end %>
+              </div>
+              <div class="fbr-stat-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+                <i class="fas fa-calendar-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+    <div class="col">
       <div class="card fbr-stat-card h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start">
@@ -32,7 +76,7 @@
       </div>
     </div>
 
-    <div class="col-md-6 col-lg-3">
+    <div class="col">
       <div class="card fbr-stat-card h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start">
@@ -47,7 +91,7 @@
       </div>
     </div>
 
-    <div class="col-md-6 col-lg-3">
+    <div class="col">
       <div class="card fbr-stat-card h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start">
@@ -64,7 +108,7 @@
       </div>
     </div>
 
-    <div class="col-md-6 col-lg-3">
+    <div class="col">
       <div class="card fbr-stat-card h-100">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-start">

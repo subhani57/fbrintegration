@@ -1,0 +1,42 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-key text-primary"></i> API Keys</h1>
+<p class="text-muted">Use API v2 with header <code>Authorization: Bearer YOUR_KEY</code></p>
+
+<% if flash[:api_key_token].present? %>
+  <div class="alert alert-warning">
+    <strong>Copy your new key now:</strong>
+    <code class="user-select-all"><%= flash[:api_key_token] %></code>
+  </div>
+<% end %>
+
+<%= form_with url: api_keys_path, method: :post, local: true, class: 'card mb-4' do |f| %>
+  <div class="card-body row g-2 align-items-end">
+    <div class="col-md-8">
+      <%= label_tag :name, 'Key name', class: 'form-label' %>
+      <%= text_field_tag :name, 'Production API', class: 'form-control' %>
+    </div>
+    <div class="col-md-4"><%= submit_tag 'Create key', class: 'btn btn-primary w-100' %></div>
+  </div>
+<% end %>
+
+<div class="card">
+  <table class="table mb-0">
+    <thead><tr><th>Name</th><th>Prefix</th><th>Last used</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      <% @api_keys.each do |key| %>
+        <tr class="<%= key.active? ? '' : 'text-muted' %>">
+          <td><%= key.name %></td>
+          <td><code><%= key.token_prefix %>…</code></td>
+          <td><%= key.last_used_at&.strftime('%d %b %Y') || '—' %></td>
+          <td><%= key.created_at.strftime('%d %b %Y') %></td>
+          <td>
+            <% if key.active? %>
+              <%= button_to 'Revoke', api_key_path(key), method: :delete, class: 'btn btn-sm btn-outline-danger', form: { data: { turbo_confirm: 'Revoke this key?' } } %>
+            <% else %>
+              <span class="badge bg-secondary">Revoked</span>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

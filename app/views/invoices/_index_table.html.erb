@@ -1,7 +1,7 @@
 <div class="card">
   <% if bulk_select %>
     <div class="card-header bg-white d-flex justify-content-end py-2">
-      <button type="submit" class="btn btn-sm btn-success" data-turbo-confirm="Submit selected invoices to FBR?">
+      <button type="submit" class="btn btn-sm btn-success">
         <i class="fas fa-paper-plane"></i> Submit selected
       </button>
     </div>
@@ -75,7 +75,7 @@
       </table>
     </div>
   </div>
-  <% if invoices.respond_to?(:total_count) %>
+  <% if local_assigns.fetch(:paginate, true) && invoices.respond_to?(:total_count) %>
     <%= render 'shared/pagination_footer',
         collection: invoices,
         form_path: invoices_path,

@@ -1,0 +1,105 @@
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <h1 class="fbr-page-header mb-0"><i class="fas fa-credit-card text-primary"></i> Subscriptions</h1>
+  <span class="text-muted">Monthly fee: <strong><%= format_pkr(User::MONTHLY_SUBSCRIPTION_FEE) %></strong> per taxpayer</span>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card fbr-stat-card"><div class="card-body py-3">
+      <small class="text-muted">Active</small>
+      <div class="h4 mb-0 text-success"><%= @subscription_stats[:active] %></div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card fbr-stat-card"><div class="card-body py-3">
+      <small class="text-muted">Expiring soon</small>
+      <div class="h4 mb-0 text-warning"><%= @subscription_stats[:expiring_soon] %></div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card fbr-stat-card"><div class="card-body py-3">
+      <small class="text-muted">Expired / unpaid</small>
+      <div class="h4 mb-0 text-danger"><%= @subscription_stats[:expired] %></div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card fbr-stat-card"><div class="card-body py-3">
+      <small class="text-muted">Collected this month</small>
+      <div class="h6 mb-0"><%= format_pkr(@revenue_stats[:collected_this_month]) %></div>
+      <small class="text-muted"><%= @revenue_stats[:payments_this_month] %> payment(s)</small>
+    </div></div>
+  </div>
+</div>
+
+<%= form_with url: admin_subscriptions_path, method: :get, local: true, class: 'row g-2 mb-4 align-items-end' do |f| %>
+  <div class="col-md-4">
+    <%= f.label :status, 'Status', class: 'form-label' %>
+    <%= f.select :status,
+        options_for_select([
+          ['All taxpayers', ''],
+          ['Active', 'active'],
+          ['Expiring soon (7 days)', 'expiring_soon'],
+          ['Expired', 'expired'],
+          ['Never paid', 'never_paid']
+        ], params[:status]),
+        {}, class: 'form-select' %>
+  </div>
+  <div class="col-md-2">
+    <%= f.submit 'Filter', class: 'btn btn-primary w-100' %>
+  </div>
+  <% if params[:status].present? %>
+    <div class="col-md-2">
+      <%= link_to 'Clear', admin_subscriptions_path, class: 'btn btn-outline-secondary w-100' %>
+    </div>
+  <% end %>
+<% end %>
+
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Taxpayer</th>
+            <th>Business</th>
+            <th>Status</th>
+            <th>Active until</th>
+            <th>Record payment</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @taxpayers.each do |taxpayer| %>
+            <tr class="<%= 'table-warning' if taxpayer.subscription_expiring_soon? %>">
+              <td>
+                <%= link_to taxpayer.email, admin_subscription_path(taxpayer), class: 'fw-semibold text-decoration-none' %>
+              </td>
+              <td><%= taxpayer.business_name.presence || '—' %></td>
+              <td>
+                <%= subscription_status_badge(taxpayer) %>
+                <div class="small text-muted"><%= taxpayer.subscription_status_label %></div>
+              </td>
+              <td class="text-nowrap">
+                <%= taxpayer.subscription_active_until&.strftime('%d %b %Y') || '—' %>
+              </td>
+              <td style="min-width: 280px;">
+                <%= render 'admin/subscriptions/mark_paid_form', taxpayer: taxpayer %>
+              </td>
+              <td>
+                <%= link_to 'Details', admin_subscription_path(taxpayer), class: 'btn btn-sm btn-outline-primary' %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%= paginate @taxpayers if defined?(paginate) %>
+
+<p class="small text-muted mt-3 mb-0">
+  <i class="fas fa-info-circle me-1"></i>
+  New account approvals receive a <%= Subscriptions::Manager::TRIAL_DAYS %>-day trial when never paid.
+  Extensions stack from the current expiry date when still active.
+</p>

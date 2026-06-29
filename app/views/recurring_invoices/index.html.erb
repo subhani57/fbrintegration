@@ -1,0 +1,25 @@
+<div class="d-flex justify-content-between mb-4">
+  <h1 class="fbr-page-header mb-0"><i class="fas fa-redo text-primary"></i> Recurring Invoices</h1>
+  <%= link_to 'New schedule', new_recurring_invoice_path, class: 'btn btn-primary' %>
+</div>
+
+<div class="card">
+  <table class="table table-hover mb-0">
+    <thead><tr><th>Name</th><th>Frequency</th><th>Next run</th><th>Active</th><th></th></tr></thead>
+    <tbody>
+      <% @recurring_invoices.each do |r| %>
+        <tr>
+          <td><%= r.name %></td>
+          <td><%= r.frequency %></td>
+          <td><%= r.next_run_on.strftime('%d %b %Y') %></td>
+          <td><%= r.active? ? 'Yes' : 'No' %></td>
+          <td class="text-nowrap">
+            <%= button_to 'Run now', run_recurring_invoice_path(r), method: :post, class: 'btn btn-sm btn-outline-success' %>
+            <%= link_to 'Edit', edit_recurring_invoice_path(r), class: 'btn btn-sm btn-outline-primary' %>
+            <%= button_to 'Delete', recurring_invoice_path(r), method: :delete, class: 'btn btn-sm btn-outline-danger', form: { data: { turbo_confirm: 'Delete schedule?' } } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

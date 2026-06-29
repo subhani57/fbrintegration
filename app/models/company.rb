@@ -24,10 +24,22 @@ class Company < ApplicationRecord
     invoice.buyer_address = address
   end
 
+  def apply_fbr_verification!(result)
+    update!(
+      atl_status: result[:atl_status],
+      fbr_registration_type: result[:registration_type],
+      atl_verified_at: Time.current
+    )
+  end
+
+  def atl_verification_fresh?
+    atl_verified_at.present? && atl_verified_at > 30.days.ago
+  end
+
   private
 
   def apply_defaults
-    self.province = DEFAULT_PROVINCE
-    self.registration_type = DEFAULT_REGISTRATION_TYPE
+    self.province = DEFAULT_PROVINCE if province.blank?
+    self.registration_type = DEFAULT_REGISTRATION_TYPE if registration_type.blank?
   end
 end

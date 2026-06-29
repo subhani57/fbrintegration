@@ -6,7 +6,7 @@ class FbrInvoicesController < ApplicationController
   before_action :set_invoice, only: [:show, :download_pdf, :sync_from_fbr]
 
   def index
-    @invoices = current_user.invoices
+    @invoices = portal_user.invoices
       .where.not(fbr_invoice_id: [nil, ''])
       .order(submitted_at: :desc, updated_at: :desc)
       .page(params[:page])
@@ -21,15 +21,15 @@ class FbrInvoicesController < ApplicationController
     end
 
     @stats = {
-      total: current_user.invoices.where.not(fbr_invoice_id: [nil, '']).count,
-      this_month: current_user.invoices.where.not(fbr_invoice_id: [nil, ''])
+      total: portal_user.invoices.where.not(fbr_invoice_id: [nil, '']).count,
+      this_month: portal_user.invoices.where.not(fbr_invoice_id: [nil, ''])
         .where(submitted_at: Date.today.beginning_of_month..Date.today.end_of_month).count
     }
   end
 
   def lookup
     @fbr_number = params[:fbr_invoice_number].to_s.strip
-    @result = Fbr::IrisInvoiceService.new(current_user).fetch(@fbr_number)
+    @result = Fbr::IrisInvoiceService.new(portal_user).fetch(@fbr_number)
 
     if @result[:success]
       @local_invoice = @result[:local_invoice]
@@ -64,7 +64,7 @@ class FbrInvoicesController < ApplicationController
       return
     end
 
-    result = Fbr::IrisInvoiceService.new(current_user).sync_invoice!(@invoice)
+    result = Fbr::IrisInvoiceService.new(portal_user).sync_invoice!(@invoice)
     if result[:success]
       notice = result[:notice].presence || "Synced from FBR (#{result[:source]})."
       redirect_to fbr_invoice_path(@invoice), notice: notice
@@ -76,6 +76,6 @@ class FbrInvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = current_user.invoices.includes(:items).find(params[:id])
+    @invoice = portal_user.invoices.includes(:items).find(params[:id])
   end
 end

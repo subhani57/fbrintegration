@@ -1,0 +1,46 @@
+<div class="d-flex justify-content-between mb-4">
+  <h1 class="fbr-page-header mb-0"><%= @ticket.subject %></h1>
+  <%= link_to 'Back', admin_support_tickets_path, class: 'btn btn-outline-secondary' %>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card mb-3"><div class="card-body">
+      <p class="mb-1"><strong><%= @ticket.user.email %></strong> · <%= @ticket.created_at.strftime('%d %b %Y %H:%M') %></p>
+      <p class="mb-0"><%= simple_format(@ticket.body) %></p>
+    </div></div>
+
+    <% @replies.each do |reply| %>
+      <div class="card mb-2 <%= reply.staff_reply? ? 'border-primary' : '' %>">
+        <div class="card-body py-2">
+          <small class="text-muted"><%= reply.user.email %> · <%= reply.created_at.strftime('%d %b %H:%M') %><%= reply.staff_reply? ? ' (staff)' : '' %></small>
+          <p class="mb-0 mt-1"><%= simple_format(reply.body) %></p>
+        </div>
+      </div>
+    <% end %>
+
+    <%= form_with url: reply_admin_support_ticket_path(@ticket), method: :post, local: true, class: 'card mt-3' do |f| %>
+      <div class="card-body">
+        <%= f.text_area :body, rows: 4, class: 'form-control mb-2', placeholder: 'Staff reply…', required: true %>
+        <div class="form-check mb-2">
+          <%= check_box_tag :resolve, '1', false, class: 'form-check-input' %>
+          <%= label_tag :resolve, 'Mark resolved', class: 'form-check-label' %>
+        </div>
+        <%= f.submit 'Send reply', class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="col-lg-4">
+    <%= form_with model: @ticket, url: admin_support_ticket_path(@ticket), method: :patch, local: true, class: 'card' do |f| %>
+      <div class="card-header"><strong>Ticket settings</strong></div>
+      <div class="card-body">
+        <%= f.label :status, class: 'form-label' %>
+        <%= f.select :status, SupportTicket::STATUSES, {}, class: 'form-select mb-3' %>
+        <%= f.label :priority, class: 'form-label' %>
+        <%= f.select :priority, SupportTicket::PRIORITIES, {}, class: 'form-select mb-3' %>
+        <%= f.submit 'Update', class: 'btn btn-outline-primary w-100' %>
+      </div>
+    <% end %>
+  </div>
+</div>

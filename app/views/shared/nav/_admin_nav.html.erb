@@ -1,0 +1,60 @@
+<%# Admin portal — categorized top navbar dropdowns %>
+<li class="nav-item">
+  <%= link_to admin_dashboard_path, class: "nav-link #{'active' if nav_admin_overview_active?}" do %>
+    <i class="fas fa-tachometer-alt"></i> Dashboard
+  <% end %>
+</li>
+
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <%= nav_dropdown_toggle 'Users & billing', icon: 'fas fa-users', active: nav_admin_users_billing_active? %>
+  <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <%= nav_dropdown_header 'Accounts' %>
+    <%= nav_dropdown_item admin_users_path, 'Users', icon: 'fas fa-users', active: nav_controller?(:users) %>
+    <%= nav_dropdown_item admin_accountant_clients_path, 'Accountant assignments', icon: 'fas fa-user-tie', active: nav_controller?(:accountant_clients) %>
+    <%= nav_dropdown_divider %>
+    <%= nav_dropdown_header 'Subscriptions' %>
+    <%= nav_dropdown_item admin_subscriptions_path, 'Subscriptions', icon: 'fas fa-credit-card', active: nav_controller?(:subscriptions) %>
+    <%= nav_dropdown_item admin_subscription_plans_path, 'Plans', icon: 'fas fa-layer-group', active: nav_controller?(:subscription_plans) %>
+  </div>
+</li>
+
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <%= nav_dropdown_toggle 'Invoicing', icon: 'fas fa-file-invoice', active: nav_admin_invoicing_active? %>
+  <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <%= nav_dropdown_item admin_invoices_path, 'All invoices', icon: 'fas fa-file-invoice', active: nav_controller?(:invoices) %>
+    <%= nav_dropdown_item admin_fbr_configurations_path, 'FBR configurations', icon: 'fas fa-cogs', active: nav_controller?(:fbr_configurations) %>
+  </div>
+</li>
+
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <%= nav_dropdown_toggle 'Monitoring', icon: 'fas fa-chart-line', active: nav_admin_monitoring_active? %>
+  <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <%= nav_dropdown_header 'Analytics' %>
+    <%= nav_dropdown_item admin_reports_path, 'Reports', icon: 'fas fa-chart-bar', active: nav_controller?(:reports) %>
+    <%= nav_dropdown_divider %>
+    <%= nav_dropdown_header 'Logs & health' %>
+    <%= nav_dropdown_item admin_fbr_logs_path, 'FBR API logs', icon: 'fas fa-list', active: nav_controller?(:fbr_logs) %>
+    <%= nav_dropdown_item admin_audit_logs_path, 'Audit logs', icon: 'fas fa-history', active: nav_controller?(:audit_logs) %>
+    <%= nav_dropdown_item admin_health_path, 'System health', icon: 'fas fa-heartbeat', active: nav_controller?(:health) %>
+  </div>
+</li>
+
+<li class="nav-item">
+  <%= link_to admin_support_tickets_path, class: "nav-link #{'active' if nav_admin_support_active?}" do %>
+    <i class="fas fa-life-ring"></i> Support
+  <% end %>
+</li>
+
+<li class="nav-item dropdown" data-controller="navbar-dropdown">
+  <%= nav_dropdown_toggle 'System', icon: 'fas fa-server', active: false %>
+  <div class="dropdown-menu fbr-nav-dropdown" data-navbar-dropdown-target="menu">
+    <%= link_to sidekiq_web_path, class: 'dropdown-item', target: '_blank', rel: 'noopener' do %>
+      <i class="fas fa-tasks fa-fw me-2"></i> Sidekiq
+      <i class="fas fa-external-link-alt fa-xs ms-1 text-muted"></i>
+    <% end %>
+    <%= nav_dropdown_divider %>
+    <%= link_to root_path, class: 'dropdown-item' do %>
+      <i class="fas fa-file-invoice-dollar fa-fw me-2"></i> Taxpayer portal
+    <% end %>
+  </div>
+</li>

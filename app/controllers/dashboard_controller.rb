@@ -5,8 +5,8 @@ class DashboardController < ApplicationController
   before_action :ensure_taxpayer_portal!
 
   def index
-    @user = current_user
-    scope = current_user.invoices
+    @user = portal_user
+    scope = portal_user.invoices
 
     today = Date.today
     month_range = today.beginning_of_month..today.end_of_month
@@ -21,7 +21,7 @@ class DashboardController < ApplicationController
     @month_tax = @month_invoices.sum(:tax_amount).to_f
 
     @fbr_submitted_count = scope.where.not(fbr_invoice_id: [nil, '']).count
-    @fbr_configured = current_user.can_submit_invoices?
+    @fbr_configured = portal_user.can_submit_invoices?
 
     @recent_invoices = scope.order(created_at: :desc).limit(10)
 
@@ -47,11 +47,11 @@ class DashboardController < ApplicationController
     @end_date = parse_report_date(params[:end_date]) || Date.today.end_of_month
     @end_date = @start_date if @end_date < @start_date
 
-    base_invoices = current_user.invoices.where(invoice_date: @start_date..@end_date)
+    base_invoices = portal_user.invoices.where(invoice_date: @start_date..@end_date)
 
     @invoices = base_invoices.order(invoice_date: :desc)
 
-    @summary = Reports::TaxSummary.for_user(current_user, start_date: @start_date, end_date: @end_date)
+    @summary = Reports::TaxSummary.for_user(portal_user, start_date: @start_date, end_date: @end_date)
     @summary.merge!(
       draft: base_invoices.where(status: 'draft').count,
       failed: base_invoices.where(status: 'failed').count,

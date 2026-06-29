@@ -18,3 +18,11 @@ end
 every :day, at: '8:00am' do
   runner 'AdminAlertsJob.perform_later'
 end
+
+every :day, at: '9:00am' do
+  runner 'SubscriptionReminderJob.perform_later'
+end
+
+every :day, at: '6:00am' do
+  runner 'RecurringInvoiceJob.perform_later'
+end

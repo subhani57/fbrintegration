@@ -39,8 +39,10 @@ class InvoiceItem < ApplicationRecord
 
   def calculate_totals
     return if quantity.blank? || unit_price.blank?
-    # self.total_value = total_price
-    # self.sales_tax = tax_amount
+
+    self.tax_rate = DEFAULT_TAX_RATE if tax_rate.blank?
+    self.total_value = (quantity.to_f * unit_price.to_f).round(2)
+    self.sales_tax = (total_value * (tax_rate.to_f / 100)).round(2)
   end
 end
 

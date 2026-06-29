@@ -41,8 +41,13 @@
               <% end %>
             </td>
             <td><%= user_member_since(u)&.strftime('%Y-%m-%d') || '—' %></td>
-            <td>
+            <td class="text-nowrap">
               <%= link_to 'Edit', edit_admin_user_path(u), class: 'btn btn-sm btn-outline-secondary' %>
+              <% if u.taxpayer? %>
+                <%= link_to admin_subscription_path(u), class: 'btn btn-sm btn-outline-success' do %>
+                  <i class="fas fa-credit-card"></i> Subscription
+                <% end %>
+              <% end %>
             </td>
           </tr>
         <% end %>

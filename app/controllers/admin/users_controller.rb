@@ -135,9 +135,10 @@ module Admin
 
     def approve
       if @user.update(approved: true)
+        trial_notice = grant_approval_trial_if_eligible
         UserMailer.account_approved(@user).deliver_later
         AuditLog.record!(user: current_user, action: 'user.approved', auditable: @user, request: request)
-        redirect_to admin_user_path(@user), notice: 'User account approved.'
+        redirect_to admin_user_path(@user), notice: ['User account approved.', trial_notice].compact.join(' ')
       else
         redirect_to admin_user_path(@user), alert: @user.errors.full_messages.join(', ')
       end
@@ -147,6 +148,14 @@ module Admin
 
     def set_user
       @user = User.includes(:fbr_configurations).find(params[:id])
+    end
+
+    def grant_approval_trial_if_eligible
+      return unless @user.taxpayer?
+      return unless @user.subscription_never_paid?
+
+      Subscriptions::Manager.grant_trial!(@user, recorded_by: current_user)
+      " #{Subscriptions::Manager::TRIAL_DAYS}-day trial access granted."
     end
 
     def user_params

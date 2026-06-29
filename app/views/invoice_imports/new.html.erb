@@ -1,0 +1,23 @@
+<h1 class="fbr-page-header mb-4"><i class="fas fa-file-csv text-primary"></i> Import Invoices (CSV)</h1>
+
+<div class="card">
+  <div class="card-body">
+    <p class="text-muted mb-0">
+      One row = one draft invoice with one line item.
+      Sales tax is calculated automatically at <strong>18%</strong>.
+      <code>invoice_no</code> is optional — shown on the PDF; auto-assigned if omitted.
+    </p>
+    <p class="text-muted small mt-2 mb-3">
+      Columns: <%= Invoices::CsvImporter::HEADERS.join(', ') %>.
+      <strong>buyer_ntn</strong> and <strong>hs_code</strong> must keep leading zeros — use the template below (Excel-safe).
+    </p>
+    <%= link_to 'Download Excel-safe template', template_invoice_import_path, class: 'btn btn-sm btn-outline-secondary mb-3', data: { turbo: false } %>
+    <%= form_with url: invoice_import_path, method: :post, local: true, multipart: true do |f| %>
+      <div class="mb-3">
+        <%= file_field_tag :file, accept: '.csv', class: 'form-control', required: true %>
+      </div>
+      <%= submit_tag 'Import', class: 'btn btn-primary' %>
+      <%= link_to 'Cancel', invoices_path, class: 'btn btn-outline-secondary ms-2' %>
+    <% end %>
+  </div>
+</div>

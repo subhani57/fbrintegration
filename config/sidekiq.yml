@@ -18,3 +18,11 @@
   cleanup_old_logs:
     cron: '0 3 * * *'  # Daily at 3 AM
     class: 'CleanupLogsJob'
+
+  subscription_reminders:
+    cron: '0 9 * * *'  # Daily at 9 AM
+    class: 'SubscriptionReminderJob'
+
+  recurring_invoices:
+    cron: '0 6 * * *'  # Daily at 6 AM
+    class: 'RecurringInvoiceJob'

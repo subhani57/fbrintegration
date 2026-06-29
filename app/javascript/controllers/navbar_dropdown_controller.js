@@ -27,6 +27,7 @@ export default class extends Controller {
   }
 
   open() {
+    this.closeOtherDropdowns()
     this.element.classList.add("show")
     this.menuTarget.classList.add("show")
     this.buttonTarget.classList.add("show")
@@ -34,6 +35,16 @@ export default class extends Controller {
 
     document.addEventListener("click", this.onDocumentClick)
     document.addEventListener("keydown", this.onKeydown)
+  }
+
+  closeOtherDropdowns() {
+    document.querySelectorAll("[data-controller~='navbar-dropdown'].show").forEach((el) => {
+      if (el === this.element) return
+      el.classList.remove("show")
+      el.querySelector("[data-navbar-dropdown-target='menu']")?.classList.remove("show")
+      el.querySelector("[data-navbar-dropdown-target='button']")?.classList.remove("show")
+      el.querySelector("[data-navbar-dropdown-target='button']")?.setAttribute("aria-expanded", "false")
+    })
   }
 
   close() {

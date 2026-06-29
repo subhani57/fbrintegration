@@ -13,8 +13,8 @@ RSpec.describe Fbr::EnvironmentGuard do
 end
 
 RSpec.describe InvoicePolicy do
-  let(:taxpayer) { User.create!(email: 't@example.com', password: 'password123', role: 'taxpayer', approved: true) }
-  let(:other) { User.create!(email: 'o@example.com', password: 'password123', role: 'taxpayer', approved: true) }
+  let(:taxpayer) { User.create!(email: 't@example.com', password: 'password123', role: 'taxpayer', approved: true, subscription_active_until: 1.month.from_now.to_date) }
+  let(:other) { User.create!(email: 'o@example.com', password: 'password123', role: 'taxpayer', approved: true, subscription_active_until: 1.month.from_now.to_date) }
   let(:invoice) { taxpayer.invoices.create!(invoice_date: Date.today, invoice_type: 'Sale Invoice') }
 
   it 'allows owner to update draft' do

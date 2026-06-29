@@ -80,6 +80,107 @@ body.fbr-app .container-fluid.mt-3 {
   display: block;
 }
 
+.fbr-main-nav {
+  flex-wrap: wrap;
+  gap: 0.1rem;
+}
+
+.fbr-nav-dropdown {
+  min-width: 13rem;
+  padding: 0.35rem 0;
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 81, 50, 0.18);
+  margin-top: 0.35rem;
+}
+
+.fbr-nav-dropdown .dropdown-header {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--fbr-text-muted, #6c757d);
+  padding: 0.5rem 1rem 0.25rem;
+}
+
+.fbr-nav-dropdown .dropdown-item {
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+}
+
+.fbr-nav-dropdown .dropdown-item.active,
+.fbr-nav-dropdown .dropdown-item:active {
+  background: var(--fbr-primary-soft, #d1e7dd);
+  color: var(--fbr-primary-dark, #0f5132);
+}
+
+.fbr-nav-dropdown .dropdown-item:hover {
+  background: var(--fbr-primary-soft, #e8f5ee);
+  color: var(--fbr-primary-dark, #157347);
+}
+
+.fbr-nav-dropdown .dropdown-item i.fa-fw {
+  width: 1.25rem;
+  text-align: center;
+  color: var(--fbr-primary, #157347);
+}
+
+.fbr-user-menu-toggle {
+  display: inline-flex !important;
+  align-items: center;
+  max-width: 220px;
+}
+
+.fbr-user-avatar-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.85rem;
+}
+
+.navbar-fbr--admin .navbar-brand {
+  font-weight: 700;
+}
+
+@media (max-width: 991.98px) {
+  .navbar-fbr .nav-item.dropdown .dropdown-menu {
+    position: static !important;
+    float: none;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    margin: 0.25rem 0.5rem 0.5rem;
+  }
+
+  .navbar-fbr .fbr-nav-dropdown .dropdown-header {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .navbar-fbr .fbr-nav-dropdown .dropdown-item {
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .navbar-fbr .fbr-nav-dropdown .dropdown-item:hover,
+  .navbar-fbr .fbr-nav-dropdown .dropdown-item.active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .navbar-fbr .fbr-nav-dropdown .dropdown-item i.fa-fw {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .navbar-fbr .dropdown-divider {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
 .navbar-fbr .btn-outline-light {
   border-radius: 8px;
   font-weight: 500;
@@ -651,6 +752,18 @@ a:hover {
 }
 
 .auth-nav-register:hover {
+  background: #fff !important;
+  color: #0f5132 !important;
+}
+
+.fbr-nav-new-invoice {
+  border-radius: 8px;
+  font-weight: 600;
+  color: #157347 !important;
+  white-space: nowrap;
+}
+
+.fbr-nav-new-invoice:hover {
   background: #fff !important;
   color: #0f5132 !important;
 }

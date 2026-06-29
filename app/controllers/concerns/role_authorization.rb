@@ -11,6 +11,7 @@ module RoleAuthorization
 
   def ensure_taxpayer!
     return if current_user&.taxpayer?
+    return if current_user&.accountant? && managed_client?
 
     redirect_to admin_dashboard_path, alert: 'This action requires a taxpayer account.'
   end
