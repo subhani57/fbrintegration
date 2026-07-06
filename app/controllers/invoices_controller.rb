@@ -135,7 +135,7 @@ class InvoicesController < ApplicationController
 
   def validate
     if @invoice.validating? && !@invoice.validated?
-      FbrValidationJob.perform_later(@invoice.id)
+      run_fbr_job_now!
       redirect_to @invoice, notice: 'Retrying FBR validation. This page will update automatically.'
       return
     end
@@ -278,18 +278,22 @@ class InvoicesController < ApplicationController
 
   def recover_stuck_processing!
     return unless @invoice.validating? || @invoice.submitting?
-    return if @invoice.updated_at > 15.seconds.ago
+    return if @invoice.updated_at > 15.seconds.ago && params[:recover] != "1"
 
     Rails.cache.fetch("invoice_status_recover:#{@invoice.id}", expires_in: 2.minutes) do
-      if @invoice.validating?
-        FbrValidationJob.perform_later(@invoice.id)
-      elsif @invoice.submitting?
-        FbrSubmissionJob.perform_later(@invoice.id)
-      end
+      run_fbr_job_now!
       true
     end
 
     @invoice.reload
+  end
+
+  def run_fbr_job_now!
+    if @invoice.validating?
+      FbrValidationJob.perform_now(@invoice.id)
+    elsif @invoice.submitting?
+      FbrSubmissionJob.perform_now(@invoice.id)
+    end
   end
 
   def authorize_invoice!

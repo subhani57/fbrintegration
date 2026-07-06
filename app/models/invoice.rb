@@ -201,11 +201,11 @@ class Invoice < ApplicationRecord
   end
 
   def perform_validation
-    FbrValidationJob.perform_later(id)
+    Fbr::JobRunner.enqueue(FbrValidationJob, id)
   end
 
   def queue_fbr_submission
-    FbrSubmissionJob.perform_later(id)
+    Fbr::JobRunner.enqueue(FbrSubmissionJob, id)
   end
 
 
