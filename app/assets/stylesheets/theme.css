@@ -141,7 +141,13 @@ body.fbr-app .container-fluid.mt-3 {
 
 .fbr-user-menu .fbr-nav-dropdown {
   min-width: 12rem;
-  max-width: min(18rem, calc(100vw - 1.5rem));
+  max-width: 18rem;
+}
+
+@media (max-width: 360px) {
+  .fbr-user-menu .fbr-nav-dropdown {
+    max-width: calc(100vw - 1.5rem);
+  }
 }
 
 .fbr-user-menu-toggle {
