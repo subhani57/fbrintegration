@@ -12,11 +12,17 @@ export default class extends Controller {
   }
 
   submit() {
+    this.resetPage()
     this.element.requestSubmit()
   }
 
   submitDebounced() {
     if (this.timer) clearTimeout(this.timer)
-    this.timer = setTimeout(() => this.element.requestSubmit(), this.delayValue)
+    this.timer = setTimeout(() => this.submit(), this.delayValue)
+  }
+
+  resetPage() {
+    const pageField = this.element.querySelector('[name="page"]')
+    if (pageField) pageField.value = '1'
   }
 }

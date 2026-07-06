@@ -60,7 +60,7 @@
     <div class="card mb-3">
       <div class="card-header"><strong>Status</strong></div>
       <div class="card-body">
-        <p class="mb-2">Workflow: <span class="badge bg-secondary"><%= @invoice.status %></span></p>
+        <p class="mb-2">Workflow: <%= render 'shared/status_badge', status: @invoice.status, admin: true %></p>
         <p class="mb-2">FBR: <span class="badge bg-<%= @invoice.fbr_invoice_id.present? ? 'success' : 'secondary' %>"><%= @invoice.fbr_status || 'pending' %></span></p>
         <% if @invoice.fbr_invoice_id.present? %>
           <p class="mb-0 small text-muted">FBR ID: <%= @invoice.fbr_invoice_id %></p>

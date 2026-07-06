@@ -69,15 +69,11 @@ module Admin
     end
 
     def set_user
-      @user = User.taxpayers.find(params[:id])
+      @user = User.taxpayers.includes(:fbr_configurations).find(params[:id])
     end
 
     def load_configs_by_environment
-      @configs_by_environment = FbrConfiguration::ENVIRONMENTS.index_with do |environment|
-        @user.fbr_configurations.find_or_initialize_by(environment: environment) do |config|
-          config.active = true
-        end
-      end
+      @configs_by_environment = FbrConfiguration.indexed_for_user(@user)
     end
 
     def update_fbr_configs!

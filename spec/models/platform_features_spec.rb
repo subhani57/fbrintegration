@@ -31,8 +31,14 @@ RSpec.describe InvoicePolicy do
 end
 
 RSpec.describe Reports::TaxSummary do
-  it 'builds csv' do
-    csv = described_class.to_csv(period_label: 'Jan', invoice_count: 1, total_sales: 100, total_tax: 18, daily: { Date.today => 100 })
-    expect(csv).to include('Output tax')
+  it 'builds csv with approved and failed/cancelled sections' do
+    csv = described_class.to_csv(
+      period_label: 'Jan',
+      approved: { count: 2, net_amount: 200, total_amount: 236, tax_amount: 36 },
+      failed_cancelled: { count: 1, total_amount: 50, tax_amount: 5 },
+      daily: { Date.today => 236 }
+    )
+    expect(csv).to include('Approved sales tax')
+    expect(csv).to include('Failed / cancelled total')
   end
 end

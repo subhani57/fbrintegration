@@ -82,7 +82,7 @@
                 <td><%= inv.user&.email %></td>
                 <td><%= inv.buyer_name %></td>
                 <td><%= number_to_currency(inv.total_amount, unit: 'Rs. ') %></td>
-                <td><span class="badge bg-secondary"><%= inv.status %></span></td>
+                <td><%= render 'shared/status_badge', status: inv.status, admin: true %></td>
                 <td><%= link_to 'View', admin_invoice_path(inv), class: 'btn btn-sm btn-outline-primary' %></td>
               </tr>
             <% end %>

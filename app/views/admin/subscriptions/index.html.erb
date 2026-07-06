@@ -31,7 +31,8 @@
   </div>
 </div>
 
-<%= form_with url: admin_subscriptions_path, method: :get, local: true, class: 'row g-2 mb-4 align-items-end' do |f| %>
+<%= form_with url: admin_subscriptions_path, method: :get, local: true, html: auto_filter_form_options(html_class: 'row g-2 mb-4 align-items-end') do |f| %>
+  <%= hidden_field_tag :page, 1 %>
   <div class="col-md-4">
     <%= f.label :status, 'Status', class: 'form-label' %>
     <%= f.select :status,
@@ -42,10 +43,7 @@
           ['Expired', 'expired'],
           ['Never paid', 'never_paid']
         ], params[:status]),
-        {}, class: 'form-select' %>
-  </div>
-  <div class="col-md-2">
-    <%= f.submit 'Filter', class: 'btn btn-primary w-100' %>
+        {}, class: 'form-select', **auto_filter_change_options %>
   </div>
   <% if params[:status].present? %>
     <div class="col-md-2">
@@ -64,13 +62,14 @@
             <th>Business</th>
             <th>Status</th>
             <th>Active until</th>
+            <th>Days left</th>
             <th>Record payment</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <% @taxpayers.each do |taxpayer| %>
-            <tr class="<%= 'table-warning' if taxpayer.subscription_expiring_soon? %>">
+            <tr class="<%= 'table-danger' if taxpayer.subscription_active? && taxpayer.subscription_days_remaining <= 10 %>">
               <td>
                 <%= link_to taxpayer.email, admin_subscription_path(taxpayer), class: 'fw-semibold text-decoration-none' %>
               </td>
@@ -81,6 +80,9 @@
               </td>
               <td class="text-nowrap">
                 <%= taxpayer.subscription_active_until&.strftime('%d %b %Y') || '—' %>
+              </td>
+              <td class="text-nowrap">
+                <%= subscription_days_left_display(taxpayer) %>
               </td>
               <td style="min-width: 280px;">
                 <%= render 'admin/subscriptions/mark_paid_form', taxpayer: taxpayer %>

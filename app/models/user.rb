@@ -32,6 +32,7 @@ class User < ApplicationRecord
   validates :preferred_fbr_environment, inclusion: { in: FbrConfiguration::ENVIRONMENTS }
   validates :seller_province, presence: true, if: -> { taxpayer? && ntn_cnic.present? }
   validate :preferred_production_environment_requirements
+  validate :taxpayer_sandbox_set_by_admin_only
 
   scope :taxpayers, -> { where(role: 'taxpayer') }
   scope :admins, -> { where(role: 'admin') }
@@ -43,7 +44,7 @@ class User < ApplicationRecord
 
   mount_uploader :company_logo, CompanyLogoUploader
 
-  attr_accessor :remove_company_logo
+  attr_accessor :remove_company_logo, :allow_sandbox_environment
 
   before_save :purge_company_logo_if_requested
 
@@ -87,7 +88,7 @@ class User < ApplicationRecord
   end
 
   def default_fbr_environment
-    preferred_fbr_environment.presence || (Rails.env.production? ? 'production' : 'sandbox')
+    preferred_fbr_environment.presence || 'production'
   end
 
   def can_submit_invoices?
@@ -180,6 +181,15 @@ class User < ApplicationRecord
     update!(onboarding_step: [onboarding_step + 1, 3].min)
   end
 
+  def preload_fbr_configurations!
+    return self unless taxpayer?
+
+    fbr_configurations.load unless fbr_configurations.loaded?
+    self
+  end
+
+  alias_method :preload_taxpayer_portal_associations!, :preload_fbr_configurations!
+
   private
 
   def create_default_configuration
@@ -194,6 +204,15 @@ class User < ApplicationRecord
 
     reason = Fbr::EnvironmentGuard.switch_environment_blocked_reason(self, 'production')
     errors.add(:preferred_fbr_environment, reason) if reason.present?
+  end
+
+  def taxpayer_sandbox_set_by_admin_only
+    return unless taxpayer?
+    return if allow_sandbox_environment
+    return unless preferred_fbr_environment == 'sandbox'
+    return unless will_save_change_to_preferred_fbr_environment?
+
+    errors.add(:preferred_fbr_environment, 'Sandbox can only be enabled by an administrator.')
   end
 
   def purge_company_logo_if_requested

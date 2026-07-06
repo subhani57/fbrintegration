@@ -13,11 +13,12 @@
           <tr>
             <% if bulk_select %><th style="width:3%"></th><% end %>
             <th style="width: 9%">Date</th>
-            <th style="width: 11%">Invoice #</th>
-            <th style="width: 22%">Buyer</th>
-            <th style="width: 11%">Amount</th>
-            <th style="width: 10%">Status</th>
-            <th style="width: 12%">FBR Status</th>
+            <th style="width: 10%">Invoice #</th>
+            <th style="width: 18%">Buyer</th>
+            <th style="width: 10%">Amount</th>
+            <th style="width: 9%">Status</th>
+            <th style="width: 9%">Environment</th>
+            <th style="width: 10%">FBR Status</th>
             <th class="fbr-invoice-table__actions">Actions</th>
           </tr>
         </thead>
@@ -40,6 +41,7 @@
                   <%= invoice.status&.humanize || 'Draft' %>
                 </span>
               </td>
+              <td><%= invoice_fbr_environment_badge(invoice, fallback: current_user.default_fbr_environment) %></td>
               <td>
                 <% if invoice.fbr_invoice_id %>
                   <span class="badge bg-success"><i class="fas fa-check"></i> Submitted</span>

@@ -69,7 +69,7 @@ class InvoicePolicy < ApplicationPolicy
       if user.admin?
         scope.all
       elsif user.can_access_taxpayer_portal?
-        scope.where(user_id: user.id)
+        scope.where(user_id: user.id).for_user_environment(user)
       else
         scope.none
       end

@@ -24,6 +24,11 @@ class OnboardingController < ApplicationController
       end
     when 2
       config = current_user.configuration_for('sandbox') || current_user.fbr_configurations.build(environment: 'sandbox')
+      if config.taxpayer_token_locked?
+        redirect_to onboarding_path, alert: 'Sandbox FBR token is already configured and cannot be changed. Contact your administrator.'
+        return
+      end
+
       config.token = params.dig(:fbr_configuration, :token)
       if config.save
         current_user.advance_onboarding! if current_user.onboarding_step < 2

@@ -4,11 +4,11 @@ module Api
   module V2
     class InvoicesController < BaseController
       def index
-        render json: current_user.invoices.includes(:items).order(created_at: :desc).limit(100).as_json(include: :items)
+        render json: current_user.invoices.with_items.order(created_at: :desc).limit(100).as_json(include: :items)
       end
 
       def show
-        invoice = current_user.invoices.includes(:items).find(params[:id])
+        invoice = current_user.invoices.with_detail_associations.find(params[:id])
         render json: invoice.as_json(include: :items)
       end
 
@@ -25,7 +25,7 @@ module Api
 
       def invoice_params
         params.require(:invoice).permit(
-          :invoice_date, :invoice_type, :original_invoice_id,
+          :invoice_date, :invoice_type, :original_invoice_id, :po_number,
           :buyer_ntn, :buyer_name, :buyer_province, :buyer_address,
           :buyer_registration_type, :buyer_company_id, :scenario_id,
           items_attributes: [:hs_code, :description, :quantity, :uom, :unit_price, :tax_rate, :sale_type]

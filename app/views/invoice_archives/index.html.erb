@@ -1,8 +1,15 @@
 <h1 class="fbr-page-header mb-4"><i class="fas fa-archive text-primary"></i> Submitted Invoice Archive</h1>
 
-<%= form_with url: invoice_archives_path, method: :get, local: true, class: 'row g-2 mb-4' do |f| %>
-  <div class="col-md-6"><%= f.text_field :q, value: params[:q], class: 'form-control', placeholder: 'Search FBR ID, buyer…' %></div>
-  <div class="col-md-2"><%= f.submit 'Search', class: 'btn btn-primary w-100' %></div>
+<%= form_with url: invoice_archives_path, method: :get, local: true, html: auto_filter_form_options(html_class: 'row g-2 mb-4') do |f| %>
+  <%= hidden_field_tag :page, 1 %>
+  <div class="col-md-6">
+    <%= f.text_field :q, value: params[:q], class: 'form-control', placeholder: 'Search FBR ID, buyer…', **auto_filter_text_field_options %>
+  </div>
+  <% if params[:q].present? %>
+    <div class="col-md-2">
+      <%= link_to 'Clear', invoice_archives_path, class: 'btn btn-outline-secondary w-100' %>
+    </div>
+  <% end %>
 <% end %>
 
 <%= form_with url: export_invoice_archives_path, method: :post, local: true, html: { data: { turbo: false } } do %>

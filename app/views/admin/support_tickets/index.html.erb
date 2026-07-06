@@ -1,8 +1,11 @@
 <h1 class="fbr-page-header mb-4"><i class="fas fa-life-ring text-primary"></i> Support Tickets</h1>
 
-<%= form_with url: admin_support_tickets_path, method: :get, local: true, class: 'mb-4' do |f| %>
-  <%= f.select :status, options_for_select([['All', ''], *SupportTicket::STATUSES.map { |s| [s.humanize, s] }], params[:status]), {}, class: 'form-select w-auto d-inline-block' %>
-  <%= f.submit 'Filter', class: 'btn btn-primary btn-sm ms-2' %>
+<%= form_with url: admin_support_tickets_path, method: :get, local: true, html: auto_filter_form_options(html_class: 'mb-4 d-flex flex-wrap gap-2 align-items-center') do |f| %>
+  <%= hidden_field_tag :page, 1 %>
+  <%= f.select :status, options_for_select([['All', ''], *SupportTicket::STATUSES.map { |s| [s.humanize, s] }], params[:status]), {}, class: 'form-select w-auto', **auto_filter_change_options %>
+  <% if params[:status].present? %>
+    <%= link_to 'Clear', admin_support_tickets_path, class: 'btn btn-outline-secondary btn-sm' %>
+  <% end %>
 <% end %>
 
 <div class="card">

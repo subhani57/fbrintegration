@@ -6,7 +6,7 @@ module Api
       before_action :set_invoice, only: [:show, :submit, :validate]
 
       def index
-        invoices = current_user.invoices.includes(:items).order(created_at: :desc).limit(100)
+        invoices = current_user.invoices.with_items.order(created_at: :desc).limit(100)
         render json: invoices.as_json(include: :items)
       end
 
@@ -44,12 +44,12 @@ module Api
       private
 
       def set_invoice
-        @invoice = current_user.invoices.includes(:items).find(params[:id])
+        @invoice = current_user.invoices.with_detail_associations.find(params[:id])
       end
 
       def invoice_api_params
         params.require(:invoice).permit(
-          :invoice_date, :invoice_type, :original_invoice_id,
+          :invoice_date, :invoice_type, :original_invoice_id, :po_number,
           :buyer_ntn, :buyer_name, :buyer_province, :buyer_address,
           :buyer_registration_type, :buyer_company_id, :scenario_id,
           items_attributes: [:hs_code, :description, :quantity, :uom, :unit_price, :tax_rate, :sale_type, :sro_schedule_no]

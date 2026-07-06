@@ -13,10 +13,14 @@ module ManagedClientContext
     return @portal_user if defined?(@portal_user)
 
     @portal_user = if current_user&.accountant? && session[:managed_client_id].present?
-                     current_user.clients.find_by(id: session[:managed_client_id]) || current_user
+                     current_user.clients.includes(:fbr_configurations, :subscription_plan)
+                       .find_by(id: session[:managed_client_id]) || current_user
                    else
                      current_user
                    end
+
+    @portal_user&.preload_fbr_configurations!
+    @portal_user
   end
 
   def managed_client?

@@ -65,6 +65,7 @@
         <% if @user.taxpayer? %>
           <%= render 'shared/fbr_preferred_environment',
               user: @user,
+              manageable: true,
               form_path_helper: ->(environment) { preferred_fbr_environment_admin_user_path(@user, environment: environment) } %>
 
           <% configs_by_env = @user.fbr_configurations.index_by(&:environment) %>
@@ -133,7 +134,7 @@
                 <tr>
                   <td><%= inv.invoice_number %></td>
                   <td><%= inv.invoice_date %></td>
-                  <td><%= inv.status %></td>
+                  <td><%= render 'shared/status_badge', status: inv.status, admin: true %></td>
                   <td><%= link_to 'View', admin_invoice_path(inv), class: 'btn btn-xs btn-outline-primary btn-sm' %></td>
                 </tr>
               <% end %>

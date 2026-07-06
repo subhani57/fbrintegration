@@ -29,11 +29,10 @@ module Fbr
     end
 
     def self.sandbox_test_invoices_for(user)
-      user.invoices
+      user.invoices.sandbox_tests
         .where(scenario_id: SCENARIO_IDS)
         .where(fbr_status: 'submitted')
         .where.not(fbr_invoice_id: [nil, ''])
-        .where("test_data->>'sandbox_test' = ?", 'true')
     end
 
     def initialize(user)

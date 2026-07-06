@@ -1,36 +1,56 @@
-<%# locals: user, form_path_helper, embedded: false - form_path_helper is a lambda (environment) -> path %>
-<% embedded = local_assigns.fetch(:embedded, false) %>
-<div class="<%= embedded ? '' : 'border-bottom pb-3 mb-3' %>">
-  <% unless embedded %>
+<%# locals: user, manageable: false %>
+<% manageable = local_assigns.fetch(:manageable, false) %>
+<div class="<%= local_assigns.fetch(:embedded, false) ? '' : 'border-bottom pb-3 mb-3' %>">
+  <% unless local_assigns.fetch(:embedded, false) %>
     <h6 class="mb-2"><i class="fas fa-bolt text-primary"></i> Active environment for submissions</h6>
-    <p class="text-muted small mb-2">
-      Choose which token is used when this user validates or submits invoices.
-    </p>
+    <% if manageable %>
+      <p class="text-muted small mb-2">
+        Choose which token is used when this user validates or submits invoices.
+      </p>
+    <% else %>
+      <p class="text-muted small mb-2">
+        Production is the default for all taxpayers. Contact your administrator if sandbox testing is required.
+      </p>
+    <% end %>
   <% end %>
-  <div class="d-flex flex-wrap gap-2 align-items-center">
-    <% FbrConfiguration::ENVIRONMENTS.each do |environment| %>
-      <% switch_blocked = Fbr::EnvironmentGuard.switch_environment_blocked_reason(user, environment) %>
-      <% if switch_blocked.present? && user.default_fbr_environment != environment %>
-        <span class="btn btn-sm btn-outline-secondary disabled" title="<%= switch_blocked %>">
-          <%= environment.humanize %>
-        </span>
-      <% else %>
-        <% link_data = { turbo_method: :patch } %>
-        <% if environment == 'production' && user.default_fbr_environment != 'production' %>
-          <% link_data.merge!(confirm_link_data('Switch to Production? Live FBR submissions will be used.')) %>
-        <% end %>
-        <%= link_to form_path_helper.call(environment),
-            data: link_data,
-            class: "btn btn-sm #{user.default_fbr_environment == environment ? 'btn-primary' : 'btn-outline-primary'}" do %>
-          <% if user.default_fbr_environment == environment %>
-            <i class="fas fa-check-circle me-1"></i>
+
+  <% if manageable %>
+    <% form_path_helper = local_assigns.fetch(:form_path_helper) %>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <% FbrConfiguration::ENVIRONMENTS.each do |environment| %>
+        <% switch_blocked = Fbr::EnvironmentGuard.switch_environment_blocked_reason(user, environment) %>
+        <% if switch_blocked.present? && user.default_fbr_environment != environment %>
+          <span class="btn btn-sm btn-outline-secondary disabled" title="<%= switch_blocked %>">
+            <%= environment.humanize %>
+          </span>
+        <% else %>
+          <% link_data = { turbo_method: :patch } %>
+          <% if environment == 'production' && user.default_fbr_environment != 'production' %>
+            <% link_data.merge!(confirm_link_data('Switch to Production? Live FBR submissions will be used.')) %>
           <% end %>
-          <%= environment.humanize %>
+          <%= link_to form_path_helper.call(environment),
+              data: link_data,
+              class: "btn btn-sm #{user.default_fbr_environment == environment ? 'btn-primary' : 'btn-outline-primary'}" do %>
+            <% if user.default_fbr_environment == environment %>
+              <i class="fas fa-check-circle me-1"></i>
+            <% end %>
+            <%= environment.humanize %>
+          <% end %>
         <% end %>
       <% end %>
-    <% end %>
-  </div>
-  <% unless embedded %>
+    </div>
+  <% else %>
+    <div class="d-flex align-items-center gap-2">
+      <%= fbr_environment_badge(user.default_fbr_environment) %>
+      <% if user.default_fbr_environment == 'sandbox' %>
+        <span class="text-muted small">Set by administrator</span>
+      <% else %>
+        <span class="text-muted small">Default for all taxpayers</span>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% unless local_assigns.fetch(:embedded, false) %>
     <p class="text-muted small mb-0 mt-2">
       Current: <%= user_fbr_submission_environment_display(user) %>
     </p>

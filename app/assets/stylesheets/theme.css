@@ -281,6 +281,40 @@ body.fbr-app .container-fluid.mt-3 {
   }
 }
 
+.fbr-env-switcher--table {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+.fbr-env-switcher--table .fbr-env-switcher__btn {
+  color: #64748b;
+}
+
+.fbr-env-switcher--table .fbr-env-switcher__btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.fbr-env-switcher--table .fbr-env-switcher__btn--active {
+  background: #fff;
+  color: var(--fbr-primary-dark);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.fbr-env-switcher--table .fbr-env-switcher__btn--production.fbr-env-switcher__btn--active {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: #fff;
+}
+
+.fbr-env-switcher--table .fbr-env-switcher__btn--production.fbr-env-switcher__btn--active:hover {
+  background: linear-gradient(135deg, #c82333, #bd2130);
+  color: #fff;
+}
+
+.fbr-env-switcher--table .fbr-env-switcher__btn--disabled {
+  color: #94a3b8;
+}
+
 /* ── Buttons ── */
 .btn-primary {
   background: linear-gradient(135deg, #157347, #1a8f5a);

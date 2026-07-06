@@ -5,7 +5,7 @@ class InvoiceArchivesController < ApplicationController
   before_action :ensure_taxpayer_portal!
 
   def index
-    @invoices = portal_user.invoices.where.not(fbr_invoice_id: [nil, '']).includes(:items).order(submitted_at: :desc)
+    @invoices = portal_user.invoices.for_user_environment(portal_user).where.not(fbr_invoice_id: [nil, '']).order(submitted_at: :desc)
     if params[:q].present?
       q = "%#{params[:q]}%"
       @invoices = @invoices.where('fbr_invoice_id ILIKE :q OR buyer_name ILIKE :q OR buyer_ntn ILIKE :q', q: q)
@@ -20,7 +20,7 @@ class InvoiceArchivesController < ApplicationController
       return
     end
 
-    invoices = portal_user.invoices.includes(:items).where(id: ids).where.not(fbr_invoice_id: nil)
+    invoices = portal_user.invoices.for_user_environment(portal_user).with_items.where(id: ids).where.not(fbr_invoice_id: nil)
     if invoices.empty?
       redirect_to invoice_archives_path, alert: 'No submitted invoices found for the selected rows.'
       return

@@ -68,7 +68,12 @@
             <div>
               <h6 class="text-muted mb-1">Today's Invoices</h6>
               <h3 class="mb-0 text-primary" data-fbr-count="<%= @today_invoices.count %>"><%= @today_invoices.count %></h3>
-              <p class="text-muted small mb-0 mt-2"><%= format_pkr(@today_total) %></p>
+              <p class="small mb-0 mt-2 text-success">
+                <i class="fas fa-check-circle"></i> Approved: <%= format_pkr(@today_amounts[:approved][:total_amount]) %>
+              </p>
+              <p class="small mb-0 text-danger">
+                <i class="fas fa-times-circle"></i> Failed/Cancelled: <%= format_pkr(@today_amounts[:failed_cancelled][:total_amount]) %>
+              </p>
             </div>
             <div class="fbr-stat-icon"><i class="fas fa-file-invoice"></i></div>
           </div>
@@ -83,7 +88,12 @@
             <div>
               <h6 class="text-muted mb-1">This Month</h6>
               <h3 class="mb-0 text-primary" data-fbr-count="<%= @month_invoices.count %>"><%= @month_invoices.count %></h3>
-              <p class="text-muted small mb-0 mt-2"><%= format_pkr(@month_total) %></p>
+              <p class="small mb-0 mt-2 text-success">
+                <i class="fas fa-check-circle"></i> Approved: <%= format_pkr(@month_amounts[:approved][:total_amount]) %>
+              </p>
+              <p class="small mb-0 text-danger">
+                <i class="fas fa-times-circle"></i> Failed/Cancelled: <%= format_pkr(@month_amounts[:failed_cancelled][:total_amount]) %>
+              </p>
             </div>
             <div class="fbr-stat-icon"><i class="fas fa-calendar-alt"></i></div>
           </div>
@@ -98,7 +108,7 @@
             <div>
               <h6 class="text-muted mb-1">Tax This Month</h6>
               <h3 class="mb-0"><%= format_pkr(@month_tax) %></h3>
-              <p class="text-muted small mb-0 mt-2">Sales tax collected</p>
+              <p class="text-muted small mb-0 mt-2">Approved invoices only</p>
             </div>
             <div class="fbr-stat-icon" style="background: linear-gradient(135deg, #20c997, #157347);">
               <i class="fas fa-percentage"></i>
@@ -138,7 +148,7 @@
     <div class="col-lg-8">
       <div class="card h-100">
         <div class="card-header bg-white">
-          <h6 class="card-title mb-0"><i class="fas fa-chart-line text-primary"></i> Invoice Trend (Last 30 Days)</h6>
+          <h6 class="card-title mb-0"><i class="fas fa-chart-line text-primary"></i> Invoice Trend — Approved (Last 30 Days)</h6>
         </div>
         <div class="card-body"
              data-controller="dashboard-chart"
@@ -152,7 +162,7 @@
     <div class="col-lg-4">
       <div class="card h-100">
         <div class="card-header bg-white">
-          <h6 class="card-title mb-0"><i class="fas fa-users text-primary"></i> Top Buyers (This Month)</h6>
+          <h6 class="card-title mb-0"><i class="fas fa-users text-primary"></i> Top Buyers — Approved (This Month)</h6>
         </div>
         <div class="card-body">
           <% if @top_customers.any? %>
@@ -188,6 +198,7 @@
                 <th>Buyer</th>
                 <th class="text-end">Amount</th>
                 <th>Status</th>
+                <th>Environment</th>
                 <th></th>
               </tr>
             </thead>
@@ -199,6 +210,7 @@
                   <td><%= invoice.buyer_name.presence || '—' %></td>
                   <td class="text-end"><%= format_pkr(invoice.total_amount) %></td>
                   <td><%= render 'shared/status_badge', status: invoice.status %></td>
+                  <td><%= render 'shared/invoice_environment_badge', invoice: invoice %></td>
                   <td class="text-end">
                     <%= link_to invoice_path(invoice), class: 'btn btn-sm btn-outline-primary', title: 'View' do %>
                       <i class="fas fa-eye"></i>

@@ -35,6 +35,19 @@ class FbrConfiguration < ApplicationRecord
     token_expires_at.present? && token_expires_at < Time.current
   end
 
+  def taxpayer_token_locked?
+    token_configured?
+  end
+
+  def self.indexed_for_user(user)
+    user.fbr_configurations.load unless user.fbr_configurations.loaded?
+    configs = user.fbr_configurations.index_by(&:environment)
+
+    ENVIRONMENTS.index_with do |environment|
+      configs[environment] || user.fbr_configurations.build(environment: environment, active: true)
+    end
+  end
+
   private
 
   def ensure_active

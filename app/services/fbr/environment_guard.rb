@@ -65,7 +65,7 @@ module Fbr
 
     def self.sandbox_test_blocked_reason(user)
       if production?(user)
-        return 'Test invoices cannot be sent while Production is the active FBR environment. Switch to Sandbox first.'
+        return 'Test invoices cannot be sent while Production is the active FBR environment. Ask an administrator to switch this account to Sandbox first.'
       end
 
       unless token_configured?(user, :sandbox)

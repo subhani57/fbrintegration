@@ -13,7 +13,7 @@ module MailerConfig
     options = { host: host, protocol: protocol }
 
     unless Rails.env.production?
-      options[:port] = ENV.fetch("APP_PORT", 3000).to_i
+      options[:port] = ENV.fetch("APP_PORT", 3001).to_i
     end
 
     options

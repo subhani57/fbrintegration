@@ -26,12 +26,12 @@ module Fbr
       @token = @config&.token.presence || env_fallback_token
     end
 
-    def fetch(fbr_invoice_number, allow_local_fallback: true)
+    def fetch(fbr_invoice_number, allow_local_fallback: true, invoice: nil)
       number = fbr_invoice_number.to_s.strip
       return { success: false, error_message: 'FBR invoice number is required.' } if number.blank?
 
-      local = @user.invoices.find_by(fbr_invoice_id: number)
-      api_result = request_from_fbr(number)
+      local = invoice || @user.invoices.find_by(fbr_invoice_id: number)
+      api_result = request_from_fbr(number, invoice: local)
 
       if api_result[:success]
         merge_local_response!(local, api_result[:data]) if local
@@ -39,7 +39,7 @@ module Fbr
           success: true,
           data: api_result[:data],
           source: api_result[:source],
-          environment: api_result[:environment],
+          environment: api_result[:environment] || @environment,
           local_invoice: local
         }
       end
@@ -50,7 +50,7 @@ module Fbr
           success: true,
           data: api_result[:data],
           source: api_result[:source] || 'iris',
-          environment: api_result[:environment],
+          environment: api_result[:environment] || @environment,
           local_invoice: local,
           iris_status: :cancelled
         }
@@ -69,7 +69,7 @@ module Fbr
           success: false,
           error_message: api_result[:error_message] || 'Invoice not found on FBR or in your account.',
           data: api_result[:data],
-          api_unavailable: api_lookup_unavailable?(api_result[:error_message])
+          api_unavailable: api_lookup_unavailable?(api_result[:error_message], api_result[:http_code])
         }
       end
     end
@@ -90,7 +90,7 @@ module Fbr
           environment: api_result[:environment],
           data: api_result[:data],
           iris_status: iris_status,
-          notice: iris_status == :cancelled ? 'Invoice was cancelled on IRIS.' : nil
+          notice: sync_notice(iris_status, api_result[:source])
         }
       end
 
@@ -105,6 +105,17 @@ module Fbr
           data: api_result[:data],
           iris_status: :cancelled,
           notice: 'Invoice was cancelled on IRIS — local status updated.'
+        }
+      end
+
+      if api_result[:api_unavailable] && local_sync_data(invoice).present?
+        apply_sync_data!(invoice, local_sync_data(invoice))
+        return {
+          success: true,
+          source: 'local',
+          data: local_sync_data(invoice),
+          iris_status: :active,
+          notice: 'FBR live lookup is unavailable for your token — refreshed from your saved submission data.'
         }
       end
 
@@ -128,6 +139,12 @@ module Fbr
 
     private
 
+    def sync_notice(iris_status, source)
+      return 'Invoice was cancelled on IRIS.' if iris_status == :cancelled
+
+      "Synced from IRIS (#{source})."
+    end
+
     def fetch_live_status(number, invoice: nil)
       last_result = nil
 
@@ -135,7 +152,7 @@ module Fbr
         service = self.class.new(@user, environment)
         next unless service.send(:token_configured?)
 
-        result = service.send(:request_from_fbr, number).merge(environment: environment)
+        result = service.send(:request_from_fbr, number, invoice: invoice).merge(environment: environment)
         iris_status = detect_iris_status(result[:data], error_message: result[:error_message])
         result[:iris_status] = iris_status
 
@@ -166,28 +183,75 @@ module Fbr
       @token.present?
     end
 
-    def request_from_fbr(number)
+    def request_from_fbr(number, invoice: nil)
       return { success: false, error_message: 'FBR token is not configured.' } if @token.blank?
 
-      GET_ENDPOINTS[@environment].each do |endpoint|
-        url = "#{DI_BASE[@environment]}/#{endpoint}"
-        result = try_post(url, di_payload(number))
-        return result.merge(source: endpoint) if result[:success]
-      end
+      last_result = nil
 
-      legacy = try_post(LEGACY_URL, legacy_payload(number))
-      return legacy.merge(source: 'GetInvoiceDetails') if legacy[:success]
+      seller_ntn_candidates(invoice).each do |ntn|
+        GET_ENDPOINTS[@environment].each do |endpoint|
+          url = "#{DI_BASE[@environment]}/#{endpoint}"
+          payload_variants(number, ntn).each do |payload|
+            result = try_post(url, payload)
+            if result[:success]
+              return result.merge(source: endpoint, seller_ntn: ntn)
+            end
+
+            result = try_get(url, payload)
+            if result[:success]
+              return result.merge(source: endpoint, seller_ntn: ntn)
+            end
+
+            last_result = result
+          end
+        end
+
+        legacy = try_post(LEGACY_URL, legacy_payload(number, ntn))
+        return legacy.merge(source: 'GetInvoiceDetails', seller_ntn: ntn) if legacy[:success]
+
+        last_result = legacy if last_result.nil? || legacy[:http_code].to_i >= last_result[:http_code].to_i
+      end
 
       {
         success: false,
-        error_message: legacy[:error_message] || 'Could not retrieve invoice from FBR.',
-        data: legacy[:data],
-        api_unavailable: api_lookup_unavailable?(legacy[:error_message])
+        error_message: last_result&.dig(:error_message) || 'Could not retrieve invoice from FBR.',
+        data: last_result&.dig(:data),
+        http_code: last_result&.dig(:http_code),
+        api_unavailable: api_lookup_unavailable?(last_result&.dig(:error_message), last_result&.dig(:http_code))
       }
     end
 
-    def api_lookup_unavailable?(message)
-      message.to_s.match?(/403|404|forbidden|not found|No matching resource|900908/i)
+    def seller_ntn_candidates(invoice)
+      candidates = [
+        invoice&.seller_ntn,
+        @user.ntn_cnic,
+        invoice&.user&.ntn_cnic
+      ].flat_map { |value| ntn_variants(value) }
+
+      candidates.uniq.reject(&:blank?)
+    end
+
+    def ntn_variants(value)
+      raw = value.to_s.strip
+      return [] if raw.blank?
+
+      digits = raw.gsub(/\D/, '')
+      [raw, digits].uniq
+    end
+
+    def payload_variants(number, ntn)
+      [
+        { invoiceNumber: number, sellerNTNCNIC: ntn },
+        { InvoiceNumber: number, sellerNTNCNIC: ntn },
+        { invoiceNumber: number, NTNCNIC: ntn },
+        { invoiceNo: number, sellerNTNCNIC: ntn }
+      ].uniq
+    end
+
+    def api_lookup_unavailable?(message, http_code = nil)
+      return true if http_code.to_i.in?([403, 404])
+
+      message.to_s.match?(/403|404|forbidden|No matching resource|900908/i)
     end
 
     def try_post(url, payload)
@@ -198,31 +262,53 @@ module Fbr
         timeout: 45
       )
 
-      data = parse_body(response)
-      return { success: false, error_message: 'Empty response from FBR.', data: data } if data.blank?
-
-      if response_success?(response, data)
-        { success: true, data: data }
-      else
-        message = extract_error(data) || "FBR returned HTTP #{response.code}"
-        { success: false, error_message: message, data: data, http_code: response.code.to_i }
-      end
+      parse_response(response)
     rescue StandardError => e
       AppLogger.error('fbr.iris.fetch_failed', exception: e, url: url, user_id: @user.id)
       { success: false, error_message: e.message }
     end
 
-    def di_payload(number)
-      {
-        invoiceNumber: number,
-        sellerNTNCNIC: @user.ntn_cnic.to_s
-      }
+    def try_get(url, payload)
+      response = self.class.get(
+        url,
+        query: payload,
+        headers: request_headers,
+        timeout: 45
+      )
+
+      parse_response(response)
+    rescue StandardError => e
+      AppLogger.error('fbr.iris.fetch_failed', exception: e, url: url, user_id: @user.id)
+      { success: false, error_message: e.message }
     end
 
-    def legacy_payload(number)
+    def parse_response(response)
+      data = normalize_data(parse_body(response))
+      return { success: false, error_message: 'Empty response from FBR.', data: data, http_code: response.code.to_i } if data.blank?
+
+      if response_success?(response, data)
+        { success: true, data: data }
+      else
+        message = extract_error(data) || "FBR returned HTTP #{response.code}"
+        {
+          success: false,
+          error_message: message,
+          data: data,
+          http_code: response.code.to_i,
+          api_unavailable: api_lookup_unavailable?(message, response.code.to_i)
+        }
+      end
+    end
+
+    def di_payload(number, invoice: nil)
+      payload_variants(number, seller_ntn_candidates(invoice).first.to_s).first
+    end
+
+    def legacy_payload(number, ntn)
       {
         InvoiceNumber: number,
         invoiceNumber: number,
+        sellerNTNCNIC: ntn,
         POSID: 0,
         USIN: number
       }
@@ -233,7 +319,10 @@ module Fbr
         'Authorization' => "Bearer #{@token}",
         'Content-Type' => 'application/json',
         'Accept' => 'application/json',
-        'User-Agent' => 'FBR-Integration/1.0'
+        'User-Agent' => 'PostmanRuntime/7.49.1',
+        'Origin' => 'https://gw.fbr.gov.pk',
+        'Connection' => 'keep-alive',
+        'Accept-Encoding' => 'gzip, deflate, br'
       }
     end
 
@@ -247,22 +336,32 @@ module Fbr
       { 'raw' => response.body.to_s }
     end
 
+    def normalize_data(data)
+      return data unless data.is_a?(Hash)
+
+      nested = data['result'] || data['data'] || data['invoice'] || data['Invoice']
+      return data unless nested.is_a?(Hash)
+
+      data.merge(nested)
+    end
+
     def response_success?(response, data)
       return true if response.code.to_i.between?(200, 299) && invoice_data_present?(data)
 
       validation = data['validationResponse']
       return true if validation.is_a?(Hash) && validation['statusCode'] == '00'
+      return true if validation.is_a?(Hash) && validation['status'].to_s.casecmp('valid').zero?
 
       status = data['statusCode'] || data['StatusCode']
       return true if status.to_s.in?(%w[200 00 0])
 
-      data['invoiceNumber'].present? || data['result'].present?
+      data['invoiceNumber'].present? || data['InvoiceNumber'].present? || data['result'].present?
     end
 
     def invoice_data_present?(data)
       return false unless data.is_a?(Hash)
 
-      %w[invoiceNumber InvoiceNumber result invoiceType buyerBusinessName items].any? do |key|
+      %w[invoiceNumber InvoiceNumber invoiceType buyerBusinessName items dated validationResponse QRCode qrCode].any? do |key|
         data[key].present?
       end
     end
@@ -287,13 +386,14 @@ module Fbr
     end
 
     def apply_sync_data!(invoice, fbr_data)
-      merged = (invoice.response_data || {}).merge(
+      merged = (invoice.response_data || {}).deep_merge(
         'iris_sync' => fbr_data,
         'iris_synced_at' => Time.current.iso8601
       )
       qr = extract_qr(fbr_data)
       merged['QRCode'] = qr if qr.present?
       invoice.update!(response_data: merged)
+      invoice.generate_qr_code if qr.blank? && invoice.fbr_invoice_id.present? && invoice.respond_to?(:generate_qr_code)
     end
 
     def apply_iris_status!(invoice, iris_status, data)
@@ -301,6 +401,15 @@ module Fbr
       when :cancelled
         invoice.apply_iris_cancellation!(source_data: data)
       end
+    end
+
+    def local_sync_data(invoice)
+      return nil unless invoice.response_data.is_a?(Hash)
+
+      saved = invoice.response_data.except('iris_sync', 'iris_synced_at', 'iris_cancelled_at')
+      return saved if saved['invoiceNumber'].present? || saved['validationResponse'].present?
+
+      invoice.response_data['iris_sync']
     end
 
     def detect_iris_status(data, error_message: nil)
@@ -337,7 +446,7 @@ module Fbr
     def cancellation_error?(message)
       return false if message.blank?
 
-      message.match?(/cancel(l)?ed|deleted|void|not found|does not exist|invalid invoice|no record|already cancel/i)
+      message.match?(/cancel(l)?ed|deleted|void|already cancel/i)
     end
 
     def invoice_submitted_on_fbr?(invoice)

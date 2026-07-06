@@ -9,7 +9,7 @@
         <i class="fas fa-download"></i> Download FBR PDF
       <% end %>
       <% if current_user.can_manage_invoices? %>
-        <%= button_to sync_from_fbr_fbr_invoice_path(@invoice), method: :post, class: 'btn btn-outline-primary' do %>
+        <%= button_to sync_from_fbr_fbr_invoice_path(@invoice), method: :post, class: 'btn btn-outline-primary', form: { data: { turbo: false } } do %>
           <i class="fas fa-sync"></i> Sync from FBR
         <% end %>
         <% if policy(@invoice).mark_cancelled_on_iris? %>

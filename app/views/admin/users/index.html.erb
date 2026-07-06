@@ -5,13 +5,19 @@
   <% end %>
 </div>
 
-<%= form_with url: admin_users_path, method: :get, local: true, class: 'row g-2 mb-4 align-items-end' do |f| %>
+<%= form_with url: admin_users_path, method: :get, local: true, html: auto_filter_form_options(html_class: 'row g-2 mb-4 align-items-end') do |f| %>
+  <%= hidden_field_tag :page, 1 %>
   <div class="col-md-3">
     <%= f.label :role, 'Filter by role', class: 'form-label' %>
     <%= f.select :role, options_for_select((User::ROLES - ['admin']).map { |r| [r.humanize, r] }, params[:role]),
         { include_blank: 'All roles' },
-        class: 'form-select', onchange: 'this.form.requestSubmit()' %>
+        class: 'form-select', **auto_filter_change_options %>
   </div>
+  <% if params[:role].present? %>
+    <div class="col-md-2">
+      <%= link_to 'Clear', admin_users_path, class: 'btn btn-outline-secondary w-100' %>
+    </div>
+  <% end %>
 <% end %>
 
 <div class="card">
@@ -34,11 +40,7 @@
             <td><span class="badge bg-<%= u.admin? ? 'dark' : (u.taxpayer? ? 'primary' : 'secondary') %>"><%= u.role %></span></td>
             <td><%= u.business_name.presence || '—' %></td>
             <td>
-              <% if u.taxpayer? %>
-                <%= user_fbr_submission_environment_display(u) %>
-              <% else %>
-                <span class="text-muted">—</span>
-              <% end %>
+              <%= render 'admin/users/fbr_environment_switcher', user: u %>
             </td>
             <td><%= user_member_since(u)&.strftime('%Y-%m-%d') || '—' %></td>
             <td class="text-nowrap">

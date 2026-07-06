@@ -54,9 +54,7 @@
       <div class="card shadow-sm mb-4">
         <div class="card-header fw-semibold"><i class="fas fa-cogs me-1"></i> FBR API tokens</div>
         <div class="card-body">
-          <%= render 'shared/fbr_preferred_environment',
-              user: @user,
-              form_path_helper: ->(environment) { preferred_environment_profile_path(environment: environment) } %>
+          <%= render 'shared/fbr_preferred_environment', user: @user %>
 
           <% FbrConfiguration::ENVIRONMENTS.each_with_index do |environment, index| %>
             <% config = @configs_by_environment[environment] %>
@@ -70,18 +68,19 @@
               <label class="form-label" for="fbr_configurations_<%= environment %>_token">
                 FBR Security Token
               </label>
-              <input type="text"
-                     name="fbr_configurations[<%= environment %>][token]"
-                     id="fbr_configurations_<%= environment %>_token"
-                     class="form-control"
-                     autocomplete="off"
-                     placeholder="<%= config.token_configured? ? 'Enter new token to replace existing' : 'Paste your FBR API token' %>"
-                     value="">
-              <% if config.token_configured? %>
-                <div class="form-text text-success">
-                  <i class="fas fa-check-circle"></i> Token configured — leave blank to keep the current token.
+              <% if config.taxpayer_token_locked? %>
+                <div class="form-control bg-light text-muted d-flex align-items-center gap-2">
+                  <i class="fas fa-lock"></i>
+                  <span>Token configured — locked. Contact an administrator to update.</span>
                 </div>
               <% else %>
+                <input type="text"
+                       name="fbr_configurations[<%= environment %>][token]"
+                       id="fbr_configurations_<%= environment %>_token"
+                       class="form-control"
+                       autocomplete="off"
+                       placeholder="Paste your FBR API token"
+                       value="">
                 <div class="form-text">From FBR IRIS → Digital Invoicing for the <%= environment.humanize %> environment.</div>
               <% end %>
             </div>

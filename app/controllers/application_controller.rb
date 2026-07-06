@@ -8,6 +8,7 @@ class ApplicationController < ActionController::Base
   protect_from_forgery with: :exception, prepend: true
 
   before_action :ensure_approved_user!, if: :user_signed_in?
+  before_action :preload_signed_in_taxpayer_associations, if: :user_signed_in?
   rescue_from Pundit::NotAuthorizedError, with: :user_not_authorized
   rescue_from ActionController::InvalidAuthenticityToken, with: :handle_invalid_authenticity_token
   rescue_from Subscriptions::Manager::Error, with: :handle_subscription_error
@@ -41,6 +42,10 @@ class ApplicationController < ActionController::Base
     return if devise_controller? || controller_name == 'pending_approval'
 
     redirect_to pending_approval_path, alert: 'Your account is pending admin approval.'
+  end
+
+  def preload_signed_in_taxpayer_associations
+    current_user.preload_fbr_configurations! if current_user.taxpayer?
   end
 
   def handle_subscription_error(error)

@@ -6,34 +6,33 @@ class DashboardController < ApplicationController
 
   def index
     @user = portal_user
-    scope = portal_user.invoices
+    scope = portal_user.invoices.for_user_environment(portal_user)
 
     today = Date.today
     month_range = today.beginning_of_month..today.end_of_month
     chart_range = (today - 29.days)..today
 
     @today_invoices = scope.where(invoice_date: today)
-    @today_total = @today_invoices.sum(:total_amount).to_f
-    @today_tax = @today_invoices.sum(:tax_amount).to_f
+    @today_amounts = Invoices::AmountSummary.for(@today_invoices)
 
     @month_invoices = scope.where(invoice_date: month_range)
-    @month_total = @month_invoices.sum(:total_amount).to_f
-    @month_tax = @month_invoices.sum(:tax_amount).to_f
+    @month_amounts = Invoices::AmountSummary.for(@month_invoices)
+    @month_tax = @month_amounts[:approved][:tax_amount]
 
     @fbr_submitted_count = scope.where.not(fbr_invoice_id: [nil, '']).count
     @fbr_configured = portal_user.can_submit_invoices?
 
     @recent_invoices = scope.order(created_at: :desc).limit(10)
 
-    totals_by_date = scope.where(invoice_date: chart_range)
-      .group(:invoice_date)
-      .sum(:total_amount)
+    approved_chart_scope = scope.reporting_approved.where(invoice_date: chart_range)
+    totals_by_date = approved_chart_scope.group(:invoice_date).sum(:total_amount)
 
     @daily_chart_data = chart_range.index_with do |date|
       totals_by_date[date].to_f
     end
 
-    @top_customers = scope.where(invoice_date: month_range)
+    @top_customers = scope.reporting_approved
+      .where(invoice_date: month_range)
       .group(:buyer_name)
       .order(Arel.sql('SUM(total_amount) DESC'))
       .limit(5)
@@ -47,23 +46,33 @@ class DashboardController < ApplicationController
     @end_date = parse_report_date(params[:end_date]) || Date.today.end_of_month
     @end_date = @start_date if @end_date < @start_date
 
-    base_invoices = portal_user.invoices.where(invoice_date: @start_date..@end_date)
+    base_invoices = portal_user.invoices.for_user_environment(portal_user).where(invoice_date: @start_date..@end_date)
 
     @invoices = base_invoices.order(invoice_date: :desc)
 
     @summary = Reports::TaxSummary.for_user(portal_user, start_date: @start_date, end_date: @end_date)
+    @amounts = Invoices::AmountSummary.for(base_invoices)
+
     @summary.merge!(
       draft: base_invoices.where(status: 'draft').count,
       failed: base_invoices.where(status: 'failed').count,
-      fbr_submitted: base_invoices.where.not(fbr_invoice_id: [nil, '']).count
+      cancelled: base_invoices.where(status: 'cancelled').count,
+      fbr_submitted: base_invoices.where.not(fbr_invoice_id: [nil, '']).count,
+      approved: @amounts[:approved],
+      failed_cancelled: @amounts[:failed_cancelled]
     )
 
-    @daily_summary = base_invoices
+    @daily_summary = base_invoices.reporting_approved
       .group(Arel.sql('DATE(invoice_date)'))
       .order(Arel.sql('DATE(invoice_date)'))
       .sum(:total_amount)
 
-    @customer_summary = base_invoices
+    @failed_daily_summary = base_invoices.reporting_failed_or_cancelled
+      .group(Arel.sql('DATE(invoice_date)'))
+      .order(Arel.sql('DATE(invoice_date)'))
+      .sum(:total_amount)
+
+    @customer_summary = base_invoices.reporting_approved
       .group(:buyer_name)
       .sum(:total_amount)
       .sort_by { |_name, total| -total.to_f }

@@ -62,7 +62,7 @@ module Admin
     private
 
     def set_taxpayer
-      @taxpayer = User.taxpayers.find(params[:id])
+      @taxpayer = User.taxpayers.includes(:subscription_plan).find(params[:id])
     end
 
     def apply_subscription_filter!

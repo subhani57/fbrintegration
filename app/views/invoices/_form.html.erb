@@ -31,6 +31,12 @@
                   hint: 'Auto-assigned for your account. Shown on the PDF only — not sent to FBR.',
                   wrapper_html: { class: 'invoice-form-input mb-0' } %>
             </div>
+            <div class="col-md-6">
+              <%= f.input :po_number, label: 'PO # (optional)',
+                  input_html: { class: 'form-control', placeholder: 'e.g. PO-2026-0042' },
+                  hint: 'Purchase order reference for your records. Shown on the PDF only — not sent to FBR.',
+                  wrapper_html: { class: 'invoice-form-input mb-0' } %>
+            </div>
             <div class="col-md-12" id="original-invoice-field" style="<%= 'display:none' unless f.object.adjustment_note? %>">
               <%= f.input :original_invoice_id, label: 'Original FBR invoice (for debit/credit note)',
                   collection: (@submitted_invoices || []).map { |i| ["#{i.invoice_number} — #{i.fbr_invoice_id}", i.id] },

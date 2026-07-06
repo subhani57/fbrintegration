@@ -13,6 +13,11 @@ RSpec.describe Fbr::IrisInvoiceService do
       expect(status).to eq(:cancelled)
     end
 
+    it 'does not treat lookup-not-found as cancelled' do
+      status = service.send(:detect_iris_status, nil, error_message: 'Invoice not found')
+      expect(status).to eq(:unknown)
+    end
+
     it 'detects cancellation from error message' do
       status = service.send(:detect_iris_status, nil, error_message: 'Invoice has been cancelled')
       expect(status).to eq(:cancelled)

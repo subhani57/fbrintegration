@@ -1,4 +1,6 @@
 class FbrInvoicesController < ApplicationController
+  include InvoiceRecordLoading
+
   before_action :authenticate_user!
   before_action :redirect_admin_from_taxpayer_portal!
   before_action :ensure_taxpayer_portal!
@@ -6,7 +8,7 @@ class FbrInvoicesController < ApplicationController
   before_action :set_invoice, only: [:show, :download_pdf, :sync_from_fbr]
 
   def index
-    @invoices = portal_user.invoices
+    @invoices = portal_user.invoices.for_user_environment(portal_user)
       .where.not(fbr_invoice_id: [nil, ''])
       .order(submitted_at: :desc, updated_at: :desc)
       .page(params[:page])
@@ -20,10 +22,10 @@ class FbrInvoicesController < ApplicationController
       )
     end
 
+    submitted = portal_user.invoices.for_user_environment(portal_user).where.not(fbr_invoice_id: [nil, ''])
     @stats = {
-      total: portal_user.invoices.where.not(fbr_invoice_id: [nil, '']).count,
-      this_month: portal_user.invoices.where.not(fbr_invoice_id: [nil, ''])
-        .where(submitted_at: Date.today.beginning_of_month..Date.today.end_of_month).count
+      total: submitted.count,
+      this_month: submitted.where(submitted_at: Date.today.beginning_of_month..Date.today.end_of_month).count
     }
   end
 
@@ -76,6 +78,6 @@ class FbrInvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = portal_user.invoices.includes(:items).find(params[:id])
+    @invoice = find_portal_invoice(params[:id])
   end
 end

@@ -10,7 +10,7 @@ module Admin
     end
 
     def show
-      @replies = @ticket.replies.order(:created_at)
+      @replies = @ticket.replies.includes(:user).order(:created_at)
     end
 
     def update
@@ -31,7 +31,7 @@ module Admin
     private
 
     def set_ticket
-      @ticket = SupportTicket.find(params[:id])
+      @ticket = SupportTicket.includes(:user).find(params[:id])
     end
 
     def ticket_params

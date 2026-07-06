@@ -2,6 +2,8 @@
 
 class InvoicesController < ApplicationController
   include FbrSubmissionGuard
+  include InvoiceRecordLoading
+  include InvoiceExcelExportable
 
   before_action :authenticate_user!
   before_action :redirect_admin_from_taxpayer_portal!
@@ -19,28 +21,24 @@ class InvoicesController < ApplicationController
     per_page = 25 if per_page <= 0
     per_page = [per_page, 100].min
 
-    @invoices = policy_scope(Invoice)
-      .order(invoice_date: :desc, created_at: :desc)
+    scope = invoice_list_scope
 
-    if params[:status].present?
-      @invoices = @invoices.where(status: params[:status])
+    respond_to do |format|
+      format.html do
+        assign_export_dates
+        @invoices = scope.page(params[:page]).per(per_page)
+      end
+      format.xlsx do
+        dates = export_date_range_or_redirect(invoices_path)
+        return unless dates
+
+        start_date, end_date = dates
+        send_data Invoices::ExcelExporter.new(invoice_list_scope).to_stream,
+                  filename: invoice_export_filename('invoices', start_date, end_date),
+                  type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                  disposition: 'attachment'
+      end
     end
-
-    if params[:q].present?
-      q = "%#{ActiveRecord::Base.sanitize_sql_like(params[:q].strip)}%"
-      @invoices = @invoices.where(
-        <<~SQL.squish,
-          invoices.invoice_number ILIKE :q
-          OR invoices.pdf_invoice_number ILIKE :q
-          OR invoices.buyer_name ILIKE :q
-          OR invoices.buyer_ntn ILIKE :q
-          OR invoices.fbr_invoice_id ILIKE :q
-        SQL
-        q: q
-      )
-    end
-
-    @invoices = @invoices.page(params[:page]).per(per_page)
   end
 
   def show
@@ -184,6 +182,8 @@ class InvoicesController < ApplicationController
   end
 
   def sync_from_iris
+    authorize @invoice, :sync_from_iris?
+
     unless @invoice.fbr_invoice_id.present?
       redirect_to @invoice, alert: 'No FBR invoice number to sync.'
       return
@@ -193,11 +193,11 @@ class InvoicesController < ApplicationController
     if result[:success]
       notice = result[:notice].presence || "Synced from IRIS (#{result[:source]})."
       redirect_to @invoice, notice: notice
-    elsif result[:api_unavailable]
-      redirect_to @invoice, alert: result[:error_message]
     else
       redirect_to @invoice, alert: result[:error_message]
     end
+  rescue Pundit::NotAuthorizedError
+    redirect_to @invoice, alert: 'You are not authorized to sync this invoice.'
   end
 
   def mark_cancelled_on_iris
@@ -272,7 +272,8 @@ class InvoicesController < ApplicationController
   private
 
   def set_invoice
-    @invoice = portal_user.invoices.includes(:items).find(params[:id])
+    @invoice = find_portal_invoice(params[:id])
+    ActiveRecord::Associations::Preloader.new(records: [@invoice], associations: :user).call unless @invoice.association(:user).loaded?
   end
 
   def recover_stuck_processing!
@@ -303,7 +304,7 @@ class InvoicesController < ApplicationController
 
   def invoice_params
     params.require(:invoice).permit(
-      :invoice_date, :invoice_type, :original_invoice_id, :pdf_invoice_number,
+      :invoice_date, :invoice_type, :original_invoice_id, :pdf_invoice_number, :po_number,
       :seller_ntn, :seller_name, :seller_province, :seller_address,
       :buyer_ntn, :buyer_name, :buyer_province, :buyer_address,
       :buyer_registration_type, :buyer_company_id, :scenario_id,
@@ -362,5 +363,9 @@ class InvoicesController < ApplicationController
     return @invoice.buyer_company_id.to_s if @invoice&.buyer_company_id.present?
 
     find_default_buyer_company&.id&.to_s
+  end
+
+  def invoice_list_scope
+    Invoices::ListScope.call(scope: policy_scope(Invoice), params: params, user: portal_user)
   end
 end

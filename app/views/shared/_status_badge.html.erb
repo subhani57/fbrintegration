@@ -1,3 +1,4 @@
-<span class="badge bg-<%= status_badge_color(status) %>">
+<% badge_color = local_assigns[:admin] ? admin_status_badge_color(status) : status_badge_color(status) %>
+<span class="badge bg-<%= badge_color %>">
   <%= status.to_s.humanize.presence || 'Draft' %>
 </span>

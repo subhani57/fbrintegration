@@ -24,7 +24,7 @@
 
   <div class="fbr-pagination-footer__controls">
     <% if per_options.size > 1 %>
-      <%= form_with url: form_path, method: :get, local: true, class: 'fbr-pagination-footer__per' do |f| %>
+      <%= form_with url: form_path, method: :get, local: true, html: auto_filter_form_options(html_class: 'fbr-pagination-footer__per') do |f| %>
         <% extra_params.each do |key, value| %>
           <%= hidden_field_tag key, value %>
         <% end %>
@@ -34,7 +34,7 @@
             options_for_select(per_options.map { |n| [n, n] }, current_per),
             id: "pagination_per_#{collection.object_id}",
             class: 'form-select form-select-sm fbr-pagination-footer__select',
-            onchange: 'this.form.submit()' %>
+            **auto_filter_change_options %>
       <% end %>
     <% end %>
 

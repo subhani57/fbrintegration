@@ -123,9 +123,10 @@ module Fbr
       items.map do |item|
         quantity = item.quantity.to_f
         unit_price = item.unit_price.to_f
-        total_price = item.total_value || (quantity * unit_price)
+        total_price = (item.total_value || (quantity * unit_price)).to_f
         tax_rate = item.tax_rate.to_f
-        tax_amount = item.sales_tax || (total_price * tax_rate / 100.0)
+        tax_amount = (item.sales_tax || (total_price * tax_rate / 100.0)).to_f
+        retail_price = fixed_notified_value_or_retail_price(item, quantity, total_price, tax_amount)
 
         {
           hsCode: item.hs_code.presence,
@@ -135,7 +136,7 @@ module Fbr
           quantity: quantity.round(2).to_f,
           totalValues: 0,
           valueSalesExcludingST: total_price.round(2).to_f,
-          fixedNotifiedValueOrRetailPrice: 0,
+          fixedNotifiedValueOrRetailPrice: retail_price,
           salesTaxApplicable: tax_amount.round(2).to_f,
           salesTaxWithheldAtSource: 0,
           extraTax: '',
@@ -147,6 +148,24 @@ module Fbr
           sroItemSerialNo: ''
         }
       end
+    end
+
+    def fixed_notified_value_or_retail_price(item, quantity, value_excl, tax_amount)
+      sale_type = item.sale_type.to_s
+
+      if sale_type == '3rd Schedule Goods'
+        retail = (item.unit_price.to_f * quantity)
+        return retail.round(2).to_f if retail.positive?
+
+        return value_excl.round(2).to_f if value_excl.positive?
+      end
+
+      if sale_type == 'Goods at Reduced Rate'
+        retail = (value_excl + tax_amount)
+        return retail.round(2).to_f if retail.positive?
+      end
+
+      0.0
     end
 
     def handle_response(response, invoice, request_payload = nil)

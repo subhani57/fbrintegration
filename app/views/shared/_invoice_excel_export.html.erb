@@ -1,0 +1,25 @@
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <%= form_with url: export_path, method: :get, local: true, html: { data: { turbo: false } } do %>
+      <%= hidden_field_tag :format, 'xlsx' %>
+      <% filter_params.each do |key, value| %>
+        <%= hidden_field_tag key, value if value.present? %>
+      <% end %>
+      <div class="row g-2 align-items-end">
+        <div class="col-sm-6 col-md-3 col-lg-2">
+          <label for="export_start_date" class="form-label small text-muted mb-1">Export from</label>
+          <%= date_field_tag :start_date, start_date, id: 'export_start_date', class: 'form-control', required: true %>
+        </div>
+        <div class="col-sm-6 col-md-3 col-lg-2">
+          <label for="export_end_date" class="form-label small text-muted mb-1">To</label>
+          <%= date_field_tag :end_date, end_date, id: 'export_end_date', class: 'form-control', required: true %>
+        </div>
+        <div class="col-sm-12 col-md-auto">
+          <button type="submit" class="btn btn-outline-success">
+            <i class="fas fa-file-excel"></i> Export Excel
+          </button>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

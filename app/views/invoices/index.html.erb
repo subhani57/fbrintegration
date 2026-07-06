@@ -7,21 +7,22 @@
           <p class="text-muted small mb-0 mt-1"><%= @invoices.total_count %> invoice<%= @invoices.total_count == 1 ? '' : 's' %> total</p>
         <% end %>
       </div>
-      <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
-        <i class="fas fa-plus"></i> New Invoice
-      <% end if current_user.can_manage_invoices? %>
+      <div class="d-flex flex-wrap gap-2">
+        <%= link_to new_invoice_path, class: 'btn btn-primary' do %>
+          <i class="fas fa-plus"></i> New Invoice
+        <% end if current_user.can_manage_invoices? %>
+      </div>
     </div>
 
     <%= form_with url: invoices_path, method: :get, local: true,
-        html: { class: 'row g-2 mb-4', data: { controller: 'auto-submit-form' } } do |f| %>
+        html: auto_filter_form_options(html_class: 'row g-2 mb-4') do |f| %>
       <%= hidden_field_tag :page, 1 %>
       <div class="col-md-6">
         <%= f.text_field :q,
             value: params[:q],
             placeholder: 'Search invoice #, buyer, NTN, FBR #…',
             class: 'form-control',
-            autocomplete: 'off',
-            data: { action: 'input->auto-submit-form#submitDebounced' } %>
+            **auto_filter_text_field_options %>
       </div>
       <div class="col-md-4">
         <%= f.select :status,
@@ -31,7 +32,7 @@
             ),
             { include_blank: 'All statuses' },
             class: 'form-select',
-            data: { action: 'change->auto-submit-form#submit' } %>
+            **auto_filter_change_options %>
       </div>
       <% if params[:q].present? || params[:status].present? %>
         <div class="col-md-2">
@@ -39,6 +40,12 @@
         </div>
       <% end %>
     <% end %>
+
+    <%= render 'shared/invoice_excel_export',
+        export_path: invoices_path,
+        start_date: @export_start_date,
+        end_date: @export_end_date,
+        filter_params: params.permit(:q, :status).to_h %>
 
     <% if @invoices.any? %>
       <% if current_user.can_manage_invoices? %>

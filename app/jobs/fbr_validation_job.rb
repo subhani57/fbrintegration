@@ -4,7 +4,7 @@ class FbrValidationJob < ApplicationJob
   queue_as :fbr_invoices
 
   def perform(invoice_id)
-    invoice = Invoice.includes(:items, :user).find(invoice_id)
+    invoice = Invoice.with_detail_associations.find(invoice_id)
     return if invoice.cancelled? || invoice.validated?
     return unless invoice.validating?
 

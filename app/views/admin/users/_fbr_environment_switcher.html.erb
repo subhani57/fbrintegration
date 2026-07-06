@@ -1,0 +1,31 @@
+<%# locals: user %>
+<% if user.taxpayer? %>
+  <div class="fbr-env-switcher fbr-env-switcher--table" role="group" aria-label="FBR submission environment for <%= user.email %>">
+    <% FbrConfiguration::ENVIRONMENTS.each do |environment| %>
+      <% active = user.default_fbr_environment == environment %>
+      <% switch_blocked = Fbr::EnvironmentGuard.switch_environment_blocked_reason(user, environment) %>
+      <% label = environment == 'production' ? 'Production' : 'Sandbox' %>
+      <% if switch_blocked.present? && !active %>
+        <span class="fbr-env-switcher__btn fbr-env-switcher__btn--disabled"
+              title="<%= switch_blocked %>"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top">
+          <%= label %>
+        </span>
+      <% else %>
+        <% link_data = { turbo_method: :patch } %>
+        <% if environment == 'production' && !active %>
+          <% link_data.merge!(confirm_link_data("Switch #{user.email} to Production? Live FBR submissions will be used.")) %>
+        <% end %>
+        <%= link_to preferred_fbr_environment_admin_user_path(user, environment: environment),
+            data: link_data,
+            class: "fbr-env-switcher__btn #{'fbr-env-switcher__btn--active' if active} #{'fbr-env-switcher__btn--production' if environment == 'production' && active}",
+            title: "Use #{label} for #{user.email}" do %>
+          <%= label %>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
+<% else %>
+  <span class="text-muted">—</span>
+<% end %>

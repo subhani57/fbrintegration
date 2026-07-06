@@ -60,6 +60,7 @@
           <%= render 'shared/fbr_preferred_environment',
               user: @user,
               embedded: true,
+              manageable: true,
               form_path_helper: ->(environment) { preferred_fbr_environment_admin_user_path(@user, environment: environment) } %>
         </div>
       </div>

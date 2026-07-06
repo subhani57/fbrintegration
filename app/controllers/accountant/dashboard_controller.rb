@@ -8,12 +8,12 @@ module Accountant
     before_action :require_accountant!
 
     def index
-      @clients = current_user.clients.order(:email)
+      @clients = current_user.clients.includes(:subscription_plan).order(:email)
       @active_client = portal_user if managed_client?
     end
 
     def switch
-      client = current_user.clients.find(params[:client_id])
+      client = current_user.clients.includes(:fbr_configurations, :subscription_plan).find(params[:client_id])
       session[:managed_client_id] = client.id
       redirect_to dashboard_path, notice: "Now managing #{client.email}."
     end

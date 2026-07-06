@@ -29,6 +29,7 @@ class Invoice < ApplicationRecord
   # Allow blank for draft invoices
   validates :total_amount, numericality: { greater_than: 0, allow_nil: true }
   validates :tax_amount, numericality: { greater_than_or_equal_to: 0, allow_nil: true }
+  validates :po_number, length: { maximum: 50 }, allow_blank: true
 
   # State Machine
   aasm column: :status do
@@ -83,6 +84,7 @@ class Invoice < ApplicationRecord
   before_validation :apply_fbr_defaults
   before_validation :generate_invoice_number, on: :create
   before_validation :assign_pdf_invoice_number, on: :create
+  before_validation :normalize_po_number
   before_save :calculate_totals
   after_update_commit :broadcast_show_page_refresh_after_fbr_processing
 
@@ -91,7 +93,43 @@ class Invoice < ApplicationRecord
   scope :this_month, -> { where(invoice_date: Date.today.beginning_of_month..Date.today.end_of_month) }
   scope :submitted, -> { where(fbr_status: 'submitted') }
   scope :failed, -> { where(status: 'failed') }
+  scope :reporting_approved, -> { where(status: %w[approved submitted]) }
+  scope :reporting_failed_or_cancelled, -> { where(status: %w[failed cancelled rejected]) }
+  scope :sandbox_tests, -> { where("test_data->>'sandbox_test' = ?", 'true') }
+  scope :excluding_sandbox_tests, -> { where("test_data->>'sandbox_test' IS DISTINCT FROM ?", 'true') }
+  scope :for_user_environment, ->(user) {
+    if user.default_fbr_environment == 'sandbox'
+      visible_in_sandbox_portal
+    else
+      visible_in_production_portal
+    end
+  }
+  scope :visible_in_production_portal, -> {
+    where("test_data->>'sandbox_test' IS DISTINCT FROM ?", 'true').where(
+      <<~SQL.squish
+        response_data->>'submitted_environment' IS NULL
+        OR response_data->>'submitted_environment' = 'production'
+        OR response_data->>'submitted_environment' = ''
+      SQL
+    )
+  }
+  scope :visible_in_sandbox_portal, -> {
+    where(
+      <<~SQL.squish
+        test_data->>'sandbox_test' = 'true'
+        OR response_data->>'submitted_environment' = 'sandbox'
+        OR (
+          fbr_invoice_id IS NULL
+          AND COALESCE(response_data->>'submitted_environment', '') NOT IN ('production')
+          AND COALESCE(test_data->>'sandbox_test', '') != 'true'
+        )
+      SQL
+    )
+  }
   scope :by_date_range, ->(start_date, end_date) { where(invoice_date: start_date..end_date) }
+  scope :with_user, -> { includes(:user) }
+  scope :with_items, -> { includes(:items) }
+  scope :with_detail_associations, -> { includes(:items, :user) }
 
   # Class Methods
   def self.next_sequence_number_for(user, date: Date.today)
@@ -154,6 +192,10 @@ class Invoice < ApplicationRecord
     self.pdf_invoice_number = self.class.next_sequence_number_for(user)
   end
 
+  def normalize_po_number
+    self.po_number = po_number.to_s.strip.presence
+  end
+
   def pdf_display_number
     pdf_invoice_number.presence || invoice_number
   end
@@ -170,18 +212,8 @@ class Invoice < ApplicationRecord
   def generate_qr_code
     return unless fbr_invoice_id.present?
     
-    qr_data = {
-      ver: "1.0",
-      seller_ntn: seller_ntn || '0000000000000',
-      buyer_ntn: buyer_ntn || '0000000000000',
-      inv_num: fbr_invoice_id,
-      inv_date: invoice_date.iso8601,
-      total_amount: total_amount.to_s,
-      tax_amount: tax_amount.to_s
-    }.to_json
-
     begin
-      qr = RQRCode::QRCode.new(qr_data)
+      qr = RQRCode::QRCode.new(fbr_invoice_id)
       png = qr.as_png(size: 300, border_modules: 2)
       
       # Store QR code data if column exists, otherwise skip
@@ -239,6 +271,20 @@ class Invoice < ApplicationRecord
   def fbr_locked?
     fbr_status == 'submitted' || fbr_invoice_id.present? ||
       %w[submitted approved submitting].include?(status)
+  end
+
+  def fbr_submission_environment
+    return 'sandbox' if sandbox_invoice?
+
+    env = response_data.is_a?(Hash) ? response_data['submitted_environment'].to_s : ''
+    return env if env.in?(%w[sandbox production])
+
+    nil
+  end
+
+  def sandbox_invoice?
+    (test_data.is_a?(Hash) && test_data['sandbox_test'] == true) ||
+      (response_data.is_a?(Hash) && response_data['submitted_environment'] == 'sandbox')
   end
 
   def debit_note?

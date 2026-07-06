@@ -50,9 +50,7 @@
     <div class="card shadow-sm mb-4">
       <div class="card-header fw-semibold"><i class="fas fa-cogs me-1"></i> FBR API tokens</div>
       <div class="card-body">
-        <%= render 'shared/fbr_preferred_environment',
-            user: @user,
-            form_path_helper: ->(environment) { preferred_environment_profile_path(environment: environment) } %>
+        <%= render 'shared/fbr_preferred_environment', user: @user %>
 
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
@@ -76,6 +74,7 @@
                   <td>
                     <% if config&.token_configured? %>
                       <span class="text-success"><i class="fas fa-check-circle"></i> Ready</span>
+                      <span class="text-muted small d-block"><i class="fas fa-lock"></i> Locked for you</span>
                     <% else %>
                       <span class="text-muted"><i class="fas fa-minus-circle"></i> Not configured</span>
                     <% end %>
@@ -96,7 +95,8 @@
         <p class="text-muted small mb-0 mt-3">
           <i class="fas fa-info-circle text-primary me-1"></i>
           <strong>Sandbox</strong> for testing · <strong>Production</strong> for live FBR submissions.
-          Use <strong>Edit Settings</strong> to update tokens.
+          Use <strong>Edit Settings</strong> to configure tokens.
+          Once a token is saved for an environment, only an administrator can change it.
         </p>
       </div>
     </div>

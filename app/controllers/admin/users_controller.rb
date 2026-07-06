@@ -3,7 +3,7 @@ module Admin
     before_action :set_user, only: [:show, :edit, :update, :destroy, :send_test_fbr_invoices, :preferred_fbr_environment, :approve]
 
     def index
-      @users = User.where.not(role: 'admin').order(:email).page(params[:page]).per(30)
+      @users = User.where.not(role: 'admin').includes(:fbr_configurations).order(:email).page(params[:page]).per(30)
 
       if params[:role].present? && User::ROLES.include?(params[:role]) && params[:role] != 'admin'
         @users = @users.where(role: params[:role])
@@ -11,11 +11,12 @@ module Admin
     end
 
     def new
-      @user = User.new(role: 'taxpayer', approved: true)
+      @user = User.new(role: 'taxpayer', approved: true, preferred_fbr_environment: 'production')
     end
 
     def create
       @user = User.new(user_params)
+      @user.allow_sandbox_environment = true if @user.taxpayer?
       generated_password = SecureRandom.hex(12)
       @user.password = generated_password
       @user.password_confirmation = generated_password
@@ -46,6 +47,8 @@ module Admin
         redirect_to edit_admin_user_path(@user), alert: 'You cannot change your own role.'
         return
       end
+
+      @user.allow_sandbox_environment = true if @user.taxpayer?
 
       if @user.update(user_params)
         redirect_to admin_user_path(@user), notice: 'User updated.'
@@ -110,26 +113,28 @@ module Admin
 
     def preferred_fbr_environment
       unless @user.taxpayer?
-        redirect_to admin_user_path(@user), alert: 'Only taxpayer accounts have a submission environment.'
+        redirect_back fallback_location: admin_users_path, alert: 'Only taxpayer accounts have a submission environment.'
         return
       end
 
       environment = params[:environment].to_s
       unless FbrConfiguration::ENVIRONMENTS.include?(environment)
-        redirect_to admin_user_path(@user), alert: 'Invalid environment.'
+        redirect_back fallback_location: admin_user_path(@user), alert: 'Invalid environment.'
         return
       end
 
       if (reason = Fbr::EnvironmentGuard.switch_environment_blocked_reason(@user, environment))
-        redirect_to admin_user_path(@user), alert: reason
+        redirect_back fallback_location: admin_user_path(@user), alert: reason
         return
       end
 
+      @user.allow_sandbox_environment = true
+
       if @user.update(preferred_fbr_environment: environment)
-        redirect_to admin_user_path(@user),
-                    notice: "#{environment.humanize} is now the active environment for this user's submissions."
+        redirect_back fallback_location: admin_user_path(@user),
+                      notice: "#{@user.email} now uses #{environment.humanize} for FBR submissions."
       else
-        redirect_to admin_user_path(@user), alert: @user.errors.full_messages.join(', ')
+        redirect_back fallback_location: admin_user_path(@user), alert: @user.errors.full_messages.join(', ')
       end
     end
 

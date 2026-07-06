@@ -2,17 +2,27 @@ module ApplicationHelper
   include ConfirmFormHelper
 
   def status_badge_color(status)
+    invoice_status_badge_color(status, admin: false)
+  end
+
+  def admin_status_badge_color(status)
+    invoice_status_badge_color(status, admin: true)
+  end
+
+  def invoice_status_badge_color(status, admin: false)
     case status&.to_s
     when 'draft'
       'secondary'
-    when 'validated', 'submitted', 'approved'
+    when 'approved'
       'success'
+    when 'validated', 'submitted'
+      admin ? 'info' : 'success'
     when 'submitting', 'validating'
       'warning'
     when 'failed', 'rejected'
       'danger'
     when 'cancelled'
-      'dark'
+      admin ? 'danger' : 'dark'
     else
       'secondary'
     end
@@ -48,6 +58,14 @@ module ApplicationHelper
   def fbr_environment_badge(environment)
     env = environment.to_s
     css = env == 'production' ? 'dark' : 'info'
+    tag.span(env.humanize, class: "badge bg-#{css}")
+  end
+
+  def invoice_fbr_environment_badge(invoice, fallback: nil)
+    env = invoice.fbr_submission_environment.presence || fallback
+    return tag.span('—', class: 'text-muted') if env.blank?
+
+    css = env == 'production' ? 'danger' : 'success'
     tag.span(env.humanize, class: "badge bg-#{css}")
   end
 
@@ -135,5 +153,32 @@ module ApplicationHelper
     else
       tag.span('Inactive', class: 'badge bg-danger')
     end
+  end
+
+  def subscription_days_left_display(user)
+    return tag.span('—', class: 'text-muted') unless user.taxpayer?
+    return tag.span('—', class: 'text-muted') if user.subscription_active_until.nil?
+
+    if user.subscription_active?
+      days = user.subscription_days_remaining
+      css = days <= 10 ? 'text-danger fw-semibold' : 'text-success fw-semibold'
+      tag.span("#{days} #{'day'.pluralize(days)}", class: css)
+    else
+      tag.span('0 days', class: 'text-danger fw-semibold')
+    end
+  end
+
+  def auto_filter_form_options(html_class: nil)
+    options = { data: { controller: 'auto-submit-form' } }
+    options[:class] = html_class if html_class.present?
+    options
+  end
+
+  def auto_filter_text_field_options
+    { autocomplete: 'off', data: { action: 'input->auto-submit-form#submitDebounced' } }
+  end
+
+  def auto_filter_change_options
+    { data: { action: 'change->auto-submit-form#submit' } }
   end
 end

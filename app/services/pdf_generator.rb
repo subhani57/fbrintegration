@@ -14,6 +14,11 @@ class PdfGenerator
   FOOTER_HEIGHT = 32
   FBR_BRANDING_IMAGE = Rails.root.join('app/assets/images/fbrdigitalinvoicing.png').freeze
 
+  PARTY_SUBTITLES = {
+    seller: 'Your business',
+    buyer: 'Customer / buyer'
+  }.freeze
+
   def initialize(invoice)
     @invoice = invoice
     @user = invoice.user
@@ -75,12 +80,18 @@ class PdfGenerator
       label: expanded ? 8 : 7,
       display: expanded ? 28 : 22,
       table: expanded ? 8.5 : 7.5,
-      party_body: expanded ? 11 : 9.5,
-      party_header: expanded ? 9.5 : 8.5,
-      party_min: expanded ? 92 : 72,
-      party_top_margin: expanded ? 20 : 14,
-      divider_top_margin: expanded ? 18 : 12,
-      logo: expanded ? 56 : 42,
+      party_body: expanded ? 10.5 : 9.5,
+      party_header: expanded ? 9.5 : 9,
+      party_label: expanded ? 8.5 : 8,
+      party_top_margin: expanded ? 18 : 14,
+      party_gap: expanded ? 24 : 20,
+      party_pad: expanded ? [24, 24, 24, 24] : [20, 20, 20, 20],
+      party_header_pad: expanded ? [12, 24, 12, 24] : [10, 20, 10, 20],
+      party_field_gap: expanded ? 2 : 1.5,
+      party_label_top: expanded ? 9 : 8,
+      party_address_leading: expanded ? 2 : 1.5,
+      divider_top_margin: expanded ? 16 : 11,
+      logo: expanded ? 100 : 80,
       qr: expanded ? 72 : 54,
       min_item_rows: min_visual_rows(items, mode),
       row_pad: expanded ? [9, 8] : [5, 7]
@@ -88,15 +99,19 @@ class PdfGenerator
 
     case mode
     when :compact
-      base.merge!(gap: 9, body: 7.5, table: 7, display: 18, logo: 38, qr: 48,
-                  party_body: 9, party_header: 8.5,
-                  party_min: 68, party_top_margin: 10, divider_top_margin: 10,
+      base.merge!(gap: 9, body: 7.5, table: 7, display: 18, logo: 68, qr: 48,
+                  party_body: 9, party_header: 8.5, party_label: 7.5,
+                  party_top_margin: 10, divider_top_margin: 9,
+                  party_gap: 18, party_pad: [16, 16, 16, 16], party_header_pad: [10, 16, 10, 16],
+                  party_field_gap: 1.5, party_label_top: 7, party_address_leading: 1.5,
                   min_item_rows: [items + 1, 3].max, row_pad: [4, 6])
     when :ultra
       base.merge!(
         margin: [28, 36, 22, 36], gap: 7, body: 7, small: 6, table: 6.5, display: 16,
-        logo: 32, qr: 40, party_body: 8.5, party_header: 8,
-        party_min: 62, party_top_margin: 8, divider_top_margin: 8,
+        logo: 56, qr: 40, party_body: 8.5, party_header: 8, party_label: 7,
+        party_top_margin: 8, divider_top_margin: 7,
+        party_gap: 14, party_pad: [14, 14, 14, 14], party_header_pad: [9, 14, 9, 14],
+        party_field_gap: 1, party_label_top: 5, party_address_leading: 1,
         min_item_rows: items + 1, row_pad: [3, 5]
       )
     end
@@ -134,11 +149,15 @@ class PdfGenerator
 
     right_html = [
       "<color rgb='#{COLORS[:accent]}'>SALES TAX INVOICE</color>",
-      "<color rgb='#{COLORS[:muted]}'>Invoice No.:</color> <b>#{escape_html(@invoice.pdf_display_number)}</b>",
+      "<color rgb='#{COLORS[:muted]}'>Digital Invoice No.:</color> <b>#{escape_html(@invoice.fbr_invoice_id.presence || 'Pending')}</b>",
       "<color rgb='#{COLORS[:muted]}'>Date:</color> <b>#{@invoice.invoice_date.strftime('%d %b %Y')}</b>",
       "<color rgb='#{COLORS[:muted]}'>Type:</color> <b>#{escape_html(@invoice.invoice_type)}</b>",
-      "<color rgb='#{COLORS[:muted]}'>FBR No.:</color> <b>#{escape_html(@invoice.fbr_invoice_id.presence || 'Pending')}</b>"
-    ].join("\n")
+      "<color rgb='#{COLORS[:muted]}'>Invoice No.:</color> <b>#{escape_html(@invoice.pdf_display_number)}</b>"
+    ]
+    if @invoice.po_number.present?
+      right_html << "<color rgb='#{COLORS[:muted]}'>PO #:</color> <b>#{escape_html(@invoice.po_number)}</b>"
+    end
+    right_html = right_html.join("\n")
 
     if company_logo_path
       pdf.table([
@@ -173,94 +192,164 @@ class PdfGenerator
   def render_parties(pdf)
     pdf.move_down layout[:party_top_margin]
     w = pdf.bounds.width
-    party_gap = 14
+    party_gap = layout[:party_gap]
     box_w = (w - party_gap) / 2.0
+    pad = layout[:party_pad]
+    header_pad = layout[:party_header_pad]
 
-    pdf.table([
-      [party_header_cell('Sender Information'), party_spacer_cell, party_header_cell('Buyer Information')],
-      [party_body_cell(seller_fields), party_spacer_cell, party_body_cell(buyer_fields)]
-    ], column_widths: [box_w, party_gap, box_w], width: w,
-       cell_style: { border_color: COLORS[:line], border_width: 0.75 }) do |t|
-      t.row(0).background_color = COLORS[:accent]
+    rows = [[
+      party_header_cell('Sender Information', :seller),
+      party_spacer_cell,
+      party_header_cell('Buyer Information', :buyer)
+    ]]
+
+    aligned_party_body_rows(seller_fields, buyer_fields, pad).each do |left, right|
+      rows << [left, party_spacer_cell, right]
+    end
+
+    pdf.table(rows, column_widths: [box_w, party_gap, box_w], width: w,
+              cell_style: { border_color: COLORS[:line], border_width: 0.75 }) do |t|
       t.row(0).text_color = COLORS[:white]
-      t.row(0).font_style = :bold
-      t.row(0).size = layout[:party_header]
-      t.row(0).padding = [10, 14]
+      t.row(0).padding = header_pad
       t.row(0).borders = [:top, :left, :right]
+      t.row(0).valign = :center
+      t.columns(0).row(0).background_color = COLORS[:accent]
+      t.columns(2).row(0).background_color = COLORS[:accent]
 
-      t.row(1).background_color = COLORS[:white]
-      t.row(1).padding = [16, 16]
-      t.row(1).height = layout[:party_min]
-      t.row(1).valign = :top
-      t.row(1).borders = [:bottom, :left, :right]
-
-      t.columns(0).padding = [9, 8, 14, 14]
-      t.columns(2).padding = [9, 14, 14, 8]
-
-      t.column(1).borders = []
-      t.column(1).background_color = COLORS[:white]
-      t.column(1).padding = [0, 0]
+      last = t.row_length - 1
+      (1..last).each do |i|
+        row_pad = party_body_row_pad(i, last, pad)
+        t.row(i).padding = [0, 0, 0, 0]
+        t.row(i).valign = :top
+        t.columns(0).row(i).padding = row_pad
+        t.columns(2).row(i).padding = row_pad
+        t.columns(0).row(i).background_color = COLORS[:accent_light]
+        t.columns(2).row(i).background_color = COLORS[:accent_light]
+        t.columns(0).row(i).borders = i == last ? [:bottom, :left] : [:left]
+        t.columns(2).row(i).borders = i == last ? [:bottom, :right] : [:right]
+        t.column(1).row(i).borders = []
+        t.column(1).row(i).background_color = COLORS[:white]
+        t.column(1).row(i).padding = [0, 0]
+      end
     end
 
     gap(pdf)
+  end
+
+  def party_body_row_pad(index, last_index, pad)
+    top = index == 1 ? pad[0] : 0
+    bottom = index == last_index ? pad[2] : 0
+    [top, pad[1], bottom, pad[3]]
+  end
+
+  def aligned_party_body_rows(seller, buyer, _pad)
+    body = layout[:party_body]
+    label = layout[:party_label]
+    field_gap = layout[:party_field_gap]
+    label_top = layout[:party_label_top]
+    address_leading = layout[:party_address_leading]
+
+    rows = [
+      [
+        party_value_cell(seller[:name], size: body + 2, font_style: :bold),
+        party_value_cell(buyer[:name], size: body + 2, font_style: :bold)
+      ],
+      [party_gap_cell(label_top), party_gap_cell(label_top)],
+      [
+        party_label_cell('NTN/CNIC', label, field_gap),
+        party_label_cell('NTN/CNIC', label, field_gap)
+      ],
+      [
+        party_value_cell(seller[:ntn], size: body, font_style: :bold),
+        party_value_cell(buyer[:ntn], size: body, font_style: :bold)
+      ],
+      [party_gap_cell(label_top), party_gap_cell(label_top)],
+      [
+        party_label_cell('Address', label, field_gap),
+        party_label_cell('Address', label, field_gap)
+      ],
+      [
+        party_value_cell(seller[:address], size: body, leading: address_leading),
+        party_value_cell(buyer[:address], size: body, leading: address_leading)
+      ]
+    ]
+
+    if seller.fetch(:show_province, true) || buyer.fetch(:show_province, true)
+      rows << [party_gap_cell(label_top), party_gap_cell(label_top)]
+      rows << [
+        party_label_cell('Province', label, field_gap),
+        party_label_cell('Province', label, field_gap)
+      ]
+      rows << [
+        party_value_cell(seller[:province], size: body, font_style: :bold),
+        party_value_cell(buyer[:province], size: body, font_style: :bold)
+      ]
+    end
+
+    rows
+  end
+
+  def party_label_cell(text, size, bottom_gap)
+    {
+      content: text, size: size, font_style: :italic, text_color: COLORS[:muted],
+      padding: [0, 0, bottom_gap, 0], borders: [], border_width: 0
+    }
+  end
+
+  def party_value_cell(value, size:, font_style: nil, leading: nil, padding: [0, 0, 0, 0])
+    cell = {
+      content: value.presence || '—',
+      size: size,
+      text_color: COLORS[:ink],
+      padding: padding,
+      borders: [],
+      border_width: 0
+    }
+    cell[:font_style] = font_style if font_style
+    cell[:leading] = leading if leading
+    cell
+  end
+
+  def party_gap_cell(height)
+    { content: '', height: height, padding: [0, 0, 0, 0], borders: [], border_width: 0 }
   end
 
   def party_spacer_cell
     { content: '', borders: [], background_color: COLORS[:white], padding: [0, 0] }
   end
 
-  def party_header_cell(title)
-    { content: title, borders: [:top, :left, :right] }
-  end
+  def party_header_cell(title, variant)
+    header_size = layout[:party_header]
+    subtitle_size = [header_size - 1.5, 6.5].max
+    subtitle = PARTY_SUBTITLES.fetch(variant)
 
-  def party_body_cell(fields)
-    {
-      content: party_body_html(fields),
-      inline_format: true,
-      size: layout[:party_body],
-      leading: 6
-    }
-  end
+    content = [
+      "<font name='Helvetica-Bold' size='#{header_size}'><b>#{escape_html(title).upcase}</b></font>",
+      "<font name='Helvetica' size='#{subtitle_size}'><color rgb='DBEAFE'>#{subtitle}</color></font>"
+    ].join("\n")
 
-  def party_body_html(fields)
-    body_size = layout[:party_body]
-    name_size = body_size.to_i + 2
-    lines = ["<font size='#{name_size}'><b><color rgb='#{COLORS[:ink]}'>#{escape_html(fields[:name].presence || '—')}</color></b></font>"]
-
-    lines << party_detail_row('NTN/CNIC', fields[:ntn])
-
-    if fields[:address].present?
-      lines << "<color rgb='#{COLORS[:muted]}'>#{escape_html(fields[:address])}</color>"
-    end
-
-    lines << party_detail_row('Province', fields[:province]) if fields.fetch(:show_province, true)
-    lines << party_detail_row('Registration', fields[:extra]) if fields[:extra].present?
-
-    lines.join("\n")
-  end
-
-  def party_detail_row(label, value)
-    val = escape_html(value.presence || '—')
-    "<color rgb='#{COLORS[:muted]}'>#{escape_html(label)}</color>     <b><color rgb='#{COLORS[:ink]}'>#{val}</color></b>"
+    { content: content, inline_format: true, leading: 4, borders: [:top, :left, :right], align: :left }
   end
 
   # ── Line items ──────────────────────────────────────────────────────────────
 
   def render_line_items(pdf)
     w = pdf.bounds.width
+    rows = build_item_rows
+    column_widths = item_table_column_widths(pdf, rows, w)
 
     pdf.fill_color COLORS[:muted]
     pdf.text 'Line Items', size: layout[:label], style: :bold
     pdf.fill_color COLORS[:ink]
     pdf.move_down 6
 
-    pdf.table(build_item_rows, width: w, header: true,
+    pdf.table(rows, width: w, column_widths: column_widths, header: true,
              cell_style: {
                size: layout[:table],
                padding: layout[:row_pad],
                border_color: COLORS[:line],
                text_color: COLORS[:ink],
-               overflow: :shrink_to_fit,
+               overflow: :truncate,
                valign: :center
              }) do |t|
       t.row(0).background_color = COLORS[:wash]
@@ -272,17 +361,10 @@ class PdfGenerator
       t.row(0).border_bottom_width = 1.5
       t.row(0).padding = [7, 8]
 
-      t.columns(0).width = 24
       t.columns(0).align = :center
-      t.columns(2).width = 52
-      t.columns(3).width = 46
       t.columns(3).align = :right
-      t.columns(3).overflow = :truncate
-      t.columns(4).width = 56
       t.columns(4).align = :center
-      t.columns(5).width = 46
       t.columns(5).align = :right
-      t.columns(5).overflow = :truncate
       t.columns(6..8).align = :right
 
       t.rows(1..-1).borders = [:bottom]
@@ -292,8 +374,70 @@ class PdfGenerator
     gap(pdf)
   end
 
+  def item_table_column_widths(pdf, rows, table_width)
+    body_size = layout[:table]
+    header_size = layout[:label]
+    horizontal_pad = (layout[:row_pad][1] * 2) + 8
+
+    constraints = [
+      { min: 20, max: 30 },    # #
+      { min: 72, max: nil },     # Description — absorbs extra table width
+      { min: 52, max: 96 },      # HS Code
+      { min: 30, max: 52 },      # Qty
+      { min: 36, max: 96 },      # UoM
+      { min: 36, max: 56 },      # Rate
+      { min: 44, max: 88 },      # Excl ST
+      { min: 44, max: 88 },      # Tax
+      { min: 44, max: 88 }       # Amount
+    ]
+
+    widths = constraints.size.times.map do |col|
+      content_width = rows.each_with_index.filter_map do |row, row_idx|
+        text = row[col].to_s
+        next if text.blank?
+
+        size = row_idx.zero? ? header_size : body_size
+        style = row_idx.zero? ? :bold : :normal
+        pdf.width_of(text, size: size, style: style)
+      end.max.to_f
+
+      natural = content_width + horizontal_pad
+      natural = [natural, constraints[col][:min]].max
+      natural = [natural, constraints[col][:max]].min if constraints[col][:max]
+      natural
+    end
+
+    fixed_width = widths.each_with_index.sum { |width, idx| idx == 1 ? 0 : width }
+    available_desc = table_width - fixed_width
+    widths[1] = [[widths[1], available_desc].min, constraints[1][:min]].max
+
+    if widths.sum > table_width
+      overflow = widths.sum - table_width
+      slack = widths.each_with_index.sum do |width, idx|
+        next 0 if idx == 1
+
+        width - constraints[idx][:min]
+      end
+
+      if slack.positive?
+        widths.each_with_index do |width, idx|
+          next if idx == 1
+
+          reduction = overflow * ((width - constraints[idx][:min]) / slack)
+          widths[idx] = [width - reduction, constraints[idx][:min]].max
+        end
+      end
+
+      widths[1] = table_width - widths.each_with_index.sum { |width, idx| idx == 1 ? 0 : width }
+    elsif widths.sum < table_width
+      widths[1] += table_width - widths.sum
+    end
+
+    widths
+  end
+
   def build_item_rows
-    header = ['#', 'Description', 'HS Code', 'Qty', 'UoM', 'Rate', 'Excl. ST', 'Tax', 'Amount']
+    header = ['#', 'Description', 'HS Code', 'Qty', 'UoM', 'Rate', 'Excl ST', 'Tax', 'Amount']
     rows = [header]
 
     @invoice.items.each_with_index do |item, i|
@@ -307,9 +451,9 @@ class PdfGenerator
         format_qty(item.quantity),
         safe_text(item.uom),
         "#{format_qty(item.tax_rate)}%",
-        format_currency(excl),
-        format_currency(tax),
-        format_currency(excl + tax)
+        format_line_amount(excl),
+        format_line_amount(tax),
+        format_line_amount(excl + tax)
       ]
     end
 
@@ -336,7 +480,7 @@ class PdfGenerator
     compliance += "\nOfficial computer-generated sales tax invoice."
     compliance += "\nVerify at iris.fbr.gov.pk"
     compliance += "\nSubmitted: #{@invoice.submitted_at.strftime('%d %b %Y, %I:%M %p')}" if @invoice.submitted_at.present?
-    compliance += "\n<b>FBR #: #{escape_html(@invoice.fbr_invoice_id)}</b>" if @invoice.fbr_invoice_id.present?
+    compliance += "\n<b>Digital Invoice No.: #{escape_html(@invoice.fbr_invoice_id)}</b>" if @invoice.fbr_invoice_id.present?
 
     totals_table = pdf.make_table([
       [
@@ -432,23 +576,28 @@ class PdfGenerator
 
   def seller_fields
     party_fields(
-      name: @invoice.seller_name.presence || @user.business_name,
-      address: @invoice.seller_address.presence || @user.address,
-      ntn: @invoice.seller_ntn.presence || @user.ntn_cnic,
-      province: @invoice.seller_province,
-      extra: nil
+      name: format_party_name(@user.business_name.presence || @user.email),
+      address: @user.address,
+      ntn: @user.ntn_cnic,
+      province: @user.seller_province
     )
   end
 
   def buyer_fields
     party_fields(
-      name: @invoice.buyer_name,
+      name: format_party_name(@invoice.buyer_name),
       address: @invoice.buyer_address,
       ntn: @invoice.buyer_ntn,
       province: @invoice.buyer_province,
-      extra: @invoice.buyer_registration_type,
-      show_province: false
+      show_province: true
     )
+  end
+
+  def format_party_name(value)
+    text = value.to_s.strip
+    return text if text.blank? || text.include?('@')
+
+    text.titleize
   end
 
   def generate_qr_png
@@ -461,18 +610,8 @@ class PdfGenerator
 
     return nil unless @invoice.fbr_invoice_id.present?
 
-    qr_data = {
-      ver: '1.0',
-      seller_ntn: @user.ntn_cnic || '0000000000000',
-      buyer_ntn: @invoice.buyer_ntn || '0000000000000',
-      inv_num: @invoice.fbr_invoice_id,
-      inv_date: @invoice.invoice_date.iso8601,
-      total_amount: @invoice.total_amount.to_s,
-      tax_amount: @invoice.tax_amount.to_s
-    }.to_json
-
     path = Rails.root.join("tmp/qr_invoice_#{@invoice.id}_#{Process.pid}.png")
-    qr = RQRCode::QRCode.new(qr_data)
+    qr = RQRCode::QRCode.new(@invoice.fbr_invoice_id)
     File.binwrite(path, qr.as_png(size: 240, border_modules: 1).to_s)
     path.to_s
   rescue StandardError => e
@@ -491,8 +630,8 @@ class PdfGenerator
     FBR_BRANDING_IMAGE.to_s if File.exist?(FBR_BRANDING_IMAGE)
   end
 
-  def party_fields(name:, address:, ntn:, province:, extra:, show_province: true)
-    { name: name, address: address, ntn: ntn, province: province, extra: extra, show_province: show_province }
+  def party_fields(name:, address:, ntn:, province:, show_province: true)
+    { name: name, address: address, ntn: ntn, province: province, show_province: show_province }
   end
 
   def line_exclusive(item)
@@ -509,6 +648,13 @@ class PdfGenerator
   def format_currency(amount)
     formatted = format('%.2f', amount.to_f)
     "Rs. #{formatted.gsub(/(\d)(?=(\d{3})+\.)/, '\\1,')}"
+  end
+
+  def format_line_amount(amount)
+    formatted = format('%.2f', amount.to_f).sub(/\.?0+$/, '')
+    parts = formatted.split('.')
+    parts[0] = parts[0].gsub(/\B(?=(\d{3})+(?!\d))/, ',')
+    parts.join('.')
   end
 
   def format_qty(value)

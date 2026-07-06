@@ -25,7 +25,7 @@ module Compliance
     private
 
     def scope
-      @user.invoices.where(invoice_date: @start_date..@end_date).order(:invoice_date)
+      @user.invoices.for_user_environment(@user).where(invoice_date: @start_date..@end_date).order(:invoice_date)
     end
   end
 end
