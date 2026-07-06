@@ -3,8 +3,10 @@ module Fbr
   class ReferenceService
     BASE_URL = 'https://gw.fbr.gov.pk/pdi/v1'
 
-    def initialize(user = nil)
+    def initialize(user = nil, prefer_system_token: false, environment: nil)
       @user = user
+      @prefer_system_token = prefer_system_token
+      @environment = environment&.to_sym
     end
     
     def provinces
@@ -180,13 +182,26 @@ module Fbr
     end
     
     def bearer_token
-      if @user&.respond_to?(:configuration_for)
-        env = @user.default_fbr_environment.to_sym
-        user_token = @user.configuration_for(env)&.token.presence
-        return user_token if user_token.present?
+      unless @prefer_system_token
+        if @user&.respond_to?(:configuration_for)
+          user_token = @user.configuration_for(fbr_environment.to_s)&.token.presence
+          return user_token if user_token.present?
+        end
       end
 
-      ENV['FBR_SANDBOX_TOKEN'].presence || ENV['FBR_PRODUCTION_TOKEN']
+      system_bearer_token
+    end
+
+    def fbr_environment
+      @environment || @user&.default_fbr_environment&.to_sym || :sandbox
+    end
+
+    def system_bearer_token
+      if fbr_environment == :production
+        ENV['FBR_PRODUCTION_TOKEN'].presence || ENV['FBR_SANDBOX_TOKEN']
+      else
+        ENV['FBR_SANDBOX_TOKEN'].presence || ENV['FBR_PRODUCTION_TOKEN']
+      end
     end
   end
 end

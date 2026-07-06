@@ -21,6 +21,10 @@
 }
 
 /* ── Base ── */
+html {
+  overflow-x: hidden;
+}
+
 body.fbr-app {
   background-color: var(--fbr-surface);
   color: var(--fbr-text);
@@ -28,13 +32,11 @@ body.fbr-app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  max-width: 100%;
 }
 
 body.fbr-app .container-fluid.mt-3 {
   flex: 1;
-  max-width: 1400px;
-  padding-left: 1.25rem;
-  padding-right: 1.25rem;
 }
 
 /* ── Navbar ── */
@@ -127,16 +129,52 @@ body.fbr-app .container-fluid.mt-3 {
   color: var(--fbr-primary, #157347);
 }
 
+.fbr-nav-actions {
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 0.35rem;
+}
+
+.fbr-user-menu {
+  margin-left: 0.5rem;
+}
+
+.fbr-user-menu .fbr-nav-dropdown {
+  min-width: 12rem;
+  max-width: min(18rem, calc(100vw - 1.5rem));
+}
+
 .fbr-user-menu-toggle {
   display: inline-flex !important;
   align-items: center;
-  max-width: 220px;
+  gap: 0.35rem;
+  max-width: 11.5rem;
+  padding-right: 0.15rem !important;
+}
+
+.fbr-user-menu-toggle__email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.fbr-user-menu-toggle.dropdown-toggle::after {
+  flex-shrink: 0;
+  margin-left: 0;
+}
+
+.fbr-user-menu .fbr-nav-dropdown .dropdown-item {
+  white-space: normal;
+  word-break: break-word;
 }
 
 .fbr-user-avatar-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 50%;
@@ -144,11 +182,28 @@ body.fbr-app .container-fluid.mt-3 {
   font-size: 0.85rem;
 }
 
+.fbr-user-avatar-nav i {
+  color: #fff;
+  line-height: 1;
+}
+
 .navbar-fbr--admin .navbar-brand {
   font-weight: 700;
 }
 
 @media (max-width: 991.98px) {
+  .fbr-nav-actions {
+    margin-right: 0;
+  }
+
+  .fbr-user-menu {
+    margin-left: 0;
+  }
+
+  .fbr-user-menu-toggle {
+    max-width: none;
+  }
+
   .navbar-fbr .nav-item.dropdown .dropdown-menu {
     position: static !important;
     float: none;

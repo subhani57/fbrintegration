@@ -30,19 +30,7 @@ module Api
       end
 
       def search_hs_codes
-        query = params[:q].to_s.strip.downcase
-        codes = hs_codes_data
-
-        results = if query.length >= 2
-                    codes.select do |item|
-                      code = (item[:code] || item['code']).to_s.downcase
-                      desc = (item[:description] || item['description']).to_s.downcase
-                      code.include?(query) || desc.include?(query)
-                    end.first(50)
-                  else
-                    []
-                  end
-
+        results = hs_codes_catalog.search(params[:q])
         render json: results
       rescue => e
         log_reference_error(:search_hs_codes, e)
@@ -152,26 +140,11 @@ module Api
       end
 
       def hs_codes_data
-        Rails.cache.fetch('fbr_hs_codes_sorted_v1', expires_in: 24.hours) do
-          data = @reference_service.items || []
-          codes = if data.is_a?(Array) && data.any?
-                    data.filter_map do |item|
-                      code = item['hS_CODE'] || item['HS_CODE'] || item['code'] || item['hscode']
-                      next if code.blank?
+        hs_codes_catalog.all
+      end
 
-                      {
-                        code: code,
-                        description: item['description'] || item['DESCRIPTION'] || item['desc'] || ''
-                      }
-                    end
-                  else
-                    []
-                  end
-          HsCodeSorting.sort_codes(codes)
-        end
-      rescue => e
-        log_reference_error(:hs_codes_data, e)
-        []
+      def hs_codes_catalog
+        @hs_codes_catalog ||= Fbr::HsCodesCatalog.for_user(current_user)
       end
 
       def sort_hs_codes(codes)

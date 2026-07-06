@@ -1,5 +1,5 @@
 <%# Right-side account menu — shared by taxpayer and admin layouts %>
-<li class="nav-item dropdown" data-controller="navbar-dropdown">
+<li class="nav-item dropdown fbr-user-menu" data-controller="navbar-dropdown">
   <button type="button"
           class="nav-link dropdown-toggle btn btn-link border-0 text-start fbr-user-menu-toggle"
           id="userDropdown"
@@ -8,7 +8,7 @@
           aria-expanded="false"
           aria-haspopup="true">
     <span class="fbr-user-avatar-nav"><i class="fas fa-user"></i></span>
-    <span class="d-none d-lg-inline ms-1"><%= current_user.email.truncate(28) %></span>
+    <span class="d-none d-lg-inline ms-1 fbr-user-menu-toggle__email"><%= current_user.email.truncate(28) %></span>
   </button>
   <div class="dropdown-menu dropdown-menu-end fbr-nav-dropdown" data-navbar-dropdown-target="menu">
     <h6 class="dropdown-header"><%= current_user.role.humanize %> account</h6>
