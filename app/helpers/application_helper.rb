@@ -144,6 +144,8 @@ module ApplicationHelper
     return tag.span('—', class: 'text-muted') unless user.taxpayer?
 
     case user.subscription_status
+    when :free_forever
+      tag.span('Free forever', class: 'badge bg-info')
     when :active
       tag.span(user.subscription_active_until.strftime('%d %b %Y'), class: 'badge bg-success')
     when :expiring_soon
@@ -157,6 +159,7 @@ module ApplicationHelper
 
   def subscription_days_left_display(user)
     return tag.span('—', class: 'text-muted') unless user.taxpayer?
+    return tag.span('Unlimited', class: 'text-info fw-semibold') if user.subscription_free_forever?
     return tag.span('—', class: 'text-muted') if user.subscription_active_until.nil?
 
     if user.subscription_active?

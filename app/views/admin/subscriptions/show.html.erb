@@ -4,6 +4,14 @@
     <p class="text-muted mb-0"><%= @taxpayer.business_name.presence || 'Taxpayer subscription' %></p>
   </div>
   <div class="d-flex gap-2">
+    <% unless @taxpayer.subscription_free_forever? %>
+      <%= button_to mark_free_forever_admin_subscription_path(@taxpayer),
+          method: :patch,
+          class: 'btn btn-outline-info',
+          form: { data: confirm_form_data("Mark #{@taxpayer.email} as free forever? They will never need to pay subscription fees.") } do %>
+        <i class="fas fa-infinity"></i> Forever Free
+      <% end %>
+    <% end %>
     <%= link_to admin_user_path(@taxpayer), class: 'btn btn-outline-secondary' do %>
       <i class="fas fa-user"></i> User profile
     <% end %>
@@ -25,10 +33,18 @@
           <dt class="col-sm-5">Status</dt>
           <dd class="col-sm-7"><%= @taxpayer.subscription_status_label %></dd>
           <dt class="col-sm-5">Active until</dt>
-          <dd class="col-sm-7"><%= @taxpayer.subscription_active_until&.strftime('%d %B %Y') || '—' %></dd>
+          <dd class="col-sm-7">
+            <% if @taxpayer.subscription_free_forever? %>
+              <span class="text-info fw-semibold">Never expires</span>
+            <% else %>
+              <%= @taxpayer.subscription_active_until&.strftime('%d %B %Y') || '—' %>
+            <% end %>
+          </dd>
           <dt class="col-sm-5">Days remaining</dt>
           <dd class="col-sm-7">
-            <% if @taxpayer.subscription_active? %>
+            <% if @taxpayer.subscription_free_forever? %>
+              <span class="text-info fw-semibold">Unlimited</span>
+            <% elsif @taxpayer.subscription_active? %>
               <%= @taxpayer.subscription_days_remaining %> day(s)
             <% else %>
               <span class="text-danger">Expired</span>
@@ -47,7 +63,11 @@
     <div class="card">
       <div class="card-header"><strong>Record payment</strong></div>
       <div class="card-body">
-        <%= render 'admin/subscriptions/mark_paid_form', taxpayer: @taxpayer %>
+        <% if @taxpayer.subscription_free_forever? %>
+          <p class="text-muted mb-0 small">This account has forever free access. No payments are required.</p>
+        <% else %>
+          <%= render 'admin/subscriptions/mark_paid_form', taxpayer: @taxpayer %>
+        <% end %>
       </div>
     </div>
   </div>

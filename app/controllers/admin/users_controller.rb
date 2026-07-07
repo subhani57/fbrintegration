@@ -1,6 +1,6 @@
 module Admin
   class UsersController < BaseController
-    before_action :set_user, only: [:show, :edit, :update, :destroy, :send_test_fbr_invoices, :preferred_fbr_environment, :approve]
+    before_action :set_user, only: [:show, :edit, :update, :destroy, :send_test_fbr_invoices, :preferred_fbr_environment, :approve, :mark_free_forever]
 
     def index
       @users = User.where.not(role: 'admin').includes(:fbr_configurations).order(:email).page(params[:page]).per(30)
@@ -147,6 +147,24 @@ module Admin
       else
         redirect_to admin_user_path(@user), alert: @user.errors.full_messages.join(', ')
       end
+    end
+
+    def mark_free_forever
+      unless @user.taxpayer?
+        redirect_to admin_user_path(@user), alert: 'Forever free access applies to taxpayer accounts only.'
+        return
+      end
+
+      if @user.subscription_free_forever?
+        redirect_to admin_user_path(@user), notice: 'This account is already marked free forever.'
+        return
+      end
+
+      @user.grant_free_forever!(recorded_by: current_user)
+      AuditLog.record!(user: current_user, action: 'subscription.free_forever', auditable: @user, request: request)
+      redirect_to admin_user_path(@user), notice: "#{@user.email} is now free forever."
+    rescue Subscriptions::Manager::Error => e
+      redirect_to admin_user_path(@user), alert: e.message
     end
 
     private

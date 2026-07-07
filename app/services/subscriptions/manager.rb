@@ -2,7 +2,7 @@
 
 module Subscriptions
   class Manager
-    EXPIRING_SOON_DAYS = 7
+    FOREVER_FREE_PAYMENT_UNTIL = Date.new(2099, 12, 31)
     TRIAL_DAYS = 7
     PERIOD_OPTIONS = {
       '1' => 1,
@@ -37,6 +37,35 @@ module Subscriptions
         period_months: 0,
         notes: "#{days}-day trial on account approval"
         )
+      end
+
+      def grant_free_forever!(user, recorded_by:)
+        raise Error, 'Subscriptions apply to taxpayer accounts only.' unless user.taxpayer?
+        return user if user.subscription_free_forever?
+
+        user.transaction do
+          user.update!(subscription_free_forever: true)
+          user.subscription_payments.create!(
+            recorded_by: recorded_by,
+            amount: 0,
+            active_until: FOREVER_FREE_PAYMENT_UNTIL,
+            notes: 'Forever free access granted by admin'
+          )
+        end
+
+        Notification.notify!(
+          user,
+          title: 'Forever free access granted',
+          body: 'Your account now has unlimited free access to FBR invoicing.',
+          notification_type: 'success',
+          link_path: '/dashboard'
+        )
+        AppLogger.info(
+          'subscription.free_forever_granted',
+          user_id: user.id,
+          recorded_by_id: recorded_by.id
+        )
+        user
       end
 
       def record_payment!(user:, active_until:, recorded_by:, amount: nil, notes: nil, period_months: nil)

@@ -36,10 +36,17 @@ class User < ApplicationRecord
 
   scope :taxpayers, -> { where(role: 'taxpayer') }
   scope :admins, -> { where(role: 'admin') }
-  scope :subscription_expired, -> { taxpayers.where('subscription_active_until IS NULL OR subscription_active_until < ?', Date.current) }
-  scope :subscription_active, -> { taxpayers.where('subscription_active_until >= ?', Date.current) }
+  scope :subscription_expired, -> {
+    taxpayers.where(subscription_free_forever: false)
+      .where('subscription_active_until IS NULL OR subscription_active_until < ?', Date.current)
+  }
+  scope :subscription_active, -> {
+    taxpayers.where(subscription_free_forever: true)
+      .or(taxpayers.where('subscription_active_until >= ?', Date.current))
+  }
   scope :subscription_expiring_soon, -> {
-    taxpayers.where(subscription_active_until: Date.current..Date.current + Subscriptions::Manager::EXPIRING_SOON_DAYS.days)
+    taxpayers.where(subscription_free_forever: false)
+      .where(subscription_active_until: Date.current..Date.current + Subscriptions::Manager::EXPIRING_SOON_DAYS.days)
   }
 
   mount_uploader :company_logo, CompanyLogoUploader
@@ -112,6 +119,7 @@ class User < ApplicationRecord
 
   def subscription_active?
     return true unless taxpayer?
+    return true if subscription_free_forever?
 
     subscription_active_until.present? && subscription_active_until >= Date.current
   end
@@ -121,12 +129,16 @@ class User < ApplicationRecord
   end
 
   def subscription_days_remaining
-    return 0 unless subscription_active_until.present? && subscription_active?
+    return nil if subscription_free_forever?
+    return 0 unless subscription_active?
+    return 0 unless subscription_active_until.present?
 
     (subscription_active_until - Date.current).to_i
   end
 
   def subscription_expiring_soon?
+    return false if subscription_free_forever?
+
     subscription_active? && subscription_days_remaining <= Subscriptions::Manager::EXPIRING_SOON_DAYS
   end
 
@@ -136,6 +148,7 @@ class User < ApplicationRecord
 
   def subscription_status
     return :not_required unless taxpayer?
+    return :free_forever if subscription_free_forever?
     return :never_paid if subscription_active_until.nil?
     return :expired if subscription_expired?
     return :expiring_soon if subscription_expiring_soon?
@@ -146,6 +159,7 @@ class User < ApplicationRecord
   def subscription_status_label
     case subscription_status
     when :not_required then 'Not required'
+    when :free_forever then 'Free forever'
     when :never_paid then 'Never paid'
     when :expired
       if subscription_active_until.present?
@@ -175,6 +189,10 @@ class User < ApplicationRecord
 
   def extend_subscription!(recorded_by:, months: 1)
     Subscriptions::Manager.extend!(user: self, recorded_by: recorded_by, months: months)
+  end
+
+  def grant_free_forever!(recorded_by:)
+    Subscriptions::Manager.grant_free_forever!(self, recorded_by: recorded_by)
   end
 
   def advance_onboarding!

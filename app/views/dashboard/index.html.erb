@@ -24,7 +24,10 @@
             <div class="d-flex justify-content-between align-items-start">
               <div>
                 <h6 class="text-muted mb-1">Subscription</h6>
-                <% if @user.subscription_active? %>
+                <% if @user.subscription_free_forever? %>
+                  <h3 class="mb-0 text-info fs-4">Free forever</h3>
+                  <p class="text-muted small mb-0 mt-2">Unlimited access</p>
+                <% elsif @user.subscription_active? %>
                   <h3 class="mb-0 <%= @user.subscription_expiring_soon? ? 'text-warning' : 'text-success' %>" data-fbr-count="<%= @user.subscription_days_remaining %>">
                     <%= @user.subscription_days_remaining %>
                     <span class="fs-6 fw-normal text-muted">day<%= @user.subscription_days_remaining == 1 ? '' : 's' %> left</span>

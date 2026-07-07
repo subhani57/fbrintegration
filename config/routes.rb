@@ -94,11 +94,13 @@ Rails.application.routes.draw do
         post :send_test_fbr_invoices
         patch :preferred_fbr_environment
         patch :approve
+        patch :mark_free_forever
       end
     end
     resources :subscriptions, only: [:index, :show] do
       member do
         patch :mark_paid
+        patch :mark_free_forever
       end
     end
     get 'subscription_payments/:payment_id/receipt', to: 'subscriptions#receipt', as: :subscription_payment_receipt

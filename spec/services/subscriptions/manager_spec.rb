@@ -26,4 +26,24 @@ RSpec.describe Subscriptions::Manager do
       expect { described_class.grant_trial!(taxpayer, recorded_by: admin) }.not_to change(SubscriptionPayment, :count)
     end
   end
+
+  describe '.grant_free_forever!' do
+    it 'marks the taxpayer as free forever and records a zero payment' do
+      described_class.grant_free_forever!(taxpayer, recorded_by: admin)
+
+      taxpayer.reload
+      expect(taxpayer.subscription_free_forever?).to be true
+      expect(taxpayer.subscription_active?).to be true
+      expect(taxpayer.subscription_status).to eq(:free_forever)
+      expect(taxpayer.subscription_payments.last.notes).to include('Forever free')
+    end
+
+    it 'is idempotent' do
+      described_class.grant_free_forever!(taxpayer, recorded_by: admin)
+
+      expect do
+        described_class.grant_free_forever!(taxpayer, recorded_by: admin)
+      end.not_to change(SubscriptionPayment, :count)
+    end
+  end
 end

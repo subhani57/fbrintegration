@@ -2,7 +2,7 @@
 
 module Admin
   class SubscriptionsController < BaseController
-    before_action :set_taxpayer, only: [:show, :mark_paid]
+    before_action :set_taxpayer, only: [:show, :mark_paid, :mark_free_forever]
 
     def index
       @subscription_stats = Subscriptions::Manager.stats
@@ -57,6 +57,19 @@ module Admin
       )
     rescue Subscriptions::Manager::Error => e
       redirect_back fallback_location: admin_subscription_path(@taxpayer), alert: e.message
+    end
+
+    def mark_free_forever
+      if @taxpayer.subscription_free_forever?
+        redirect_to admin_subscription_path(@taxpayer), notice: 'This account is already marked free forever.'
+        return
+      end
+
+      @taxpayer.grant_free_forever!(recorded_by: current_user)
+      AuditLog.record!(user: current_user, action: 'subscription.free_forever', auditable: @taxpayer, request: request)
+      redirect_to admin_subscription_path(@taxpayer), notice: "#{@taxpayer.email} is now free forever."
+    rescue Subscriptions::Manager::Error => e
+      redirect_to admin_subscription_path(@taxpayer), alert: e.message
     end
 
     private
