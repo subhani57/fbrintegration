@@ -139,7 +139,7 @@ class User < ApplicationRecord
   def subscription_expiring_soon?
     return false if subscription_free_forever?
 
-    subscription_active? && subscription_days_remaining <= Subscriptions::Manager::EXPIRING_SOON_DAYS
+    subscription_active? && (days = subscription_days_remaining) && days <= Subscriptions::Manager::EXPIRING_SOON_DAYS
   end
 
   def subscription_never_paid?

@@ -1,3 +1,6 @@
+<% if taxpayer.subscription_free_forever? %>
+  <span class="text-muted small">Free forever</span>
+<% else %>
 <%= form_with url: mark_paid_admin_subscription_path(taxpayer), method: :patch, local: true, class: 'subscription-paid-form' do %>
   <div class="d-flex flex-wrap gap-1 mb-2">
     <% Subscriptions::Manager::PERIOD_OPTIONS.each do |label, months| %>
@@ -23,8 +26,9 @@
   </div>
   <small class="text-muted d-block mt-1">
     <%= format_pkr(User::MONTHLY_SUBSCRIPTION_FEE) %> / month
-    <% if taxpayer.subscription_active? %>
+    <% if taxpayer.subscription_active? && !taxpayer.subscription_free_forever? %>
       · <%= taxpayer.subscription_days_remaining %> day(s) left
     <% end %>
   </small>
+<% end %>
 <% end %>
