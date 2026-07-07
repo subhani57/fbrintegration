@@ -30,7 +30,7 @@ module Admin
     end
 
     def show
-      @invoices = @user.invoices.order(created_at: :desc).limit(10)
+      @invoices = @user.invoices.visible_in_admin_portal.order(created_at: :desc).limit(10)
       @sandbox_config = @user.fbr_configurations.find { |c| c.environment == 'sandbox' }
       if @user.taxpayer?
         @completed_sandbox_scenarios = Fbr::SandboxTestInvoicesService.completed_scenario_ids_for(@user)

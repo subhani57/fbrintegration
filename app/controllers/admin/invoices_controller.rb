@@ -4,7 +4,7 @@ module Admin
     before_action :set_invoice, only: [:show, :download_pdf]
 
     def index
-      reportable = Invoice.excluding_sandbox_tests
+      reportable = Invoice.visible_in_admin_portal
       scope = invoice_list_scope(reportable)
 
       respond_to do |format|
@@ -41,7 +41,7 @@ module Admin
     private
 
     def set_invoice
-      @invoice = Invoice.with_detail_associations.find(params[:id])
+      @invoice = Invoice.visible_in_admin_portal.with_detail_associations.find(params[:id])
     end
 
     def invoice_list_scope(base_scope)

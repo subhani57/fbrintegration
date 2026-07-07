@@ -35,7 +35,7 @@ module Invoices
     private
 
     def portal_scope
-      return @scope.excluding_sandbox_tests if @admin
+      return @scope.visible_in_admin_portal if @admin
       return @scope.for_user_environment(@user) if @user
 
       @scope.visible_in_production_portal

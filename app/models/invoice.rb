@@ -97,6 +97,15 @@ class Invoice < ApplicationRecord
   scope :reporting_failed_or_cancelled, -> { where(status: %w[failed cancelled rejected]) }
   scope :sandbox_tests, -> { where("test_data->>'sandbox_test' = ?", 'true') }
   scope :excluding_sandbox_tests, -> { where("test_data->>'sandbox_test' IS DISTINCT FROM ?", 'true') }
+  scope :sandbox_invoices, -> {
+    where(
+      <<~SQL.squish
+        test_data->>'sandbox_test' = 'true'
+        OR response_data->>'submitted_environment' = 'sandbox'
+      SQL
+    )
+  }
+  scope :visible_in_admin_portal, -> { visible_in_production_portal }
   scope :for_user_environment, ->(user) {
     if user.default_fbr_environment == 'sandbox'
       visible_in_sandbox_portal

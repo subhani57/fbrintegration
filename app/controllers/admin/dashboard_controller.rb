@@ -1,7 +1,7 @@
 module Admin
   class DashboardController < BaseController
     def index
-      reportable_invoices = Invoice.excluding_sandbox_tests
+      reportable_invoices = Invoice.visible_in_admin_portal
 
       @users_count = User.count
       @taxpayers_count = User.taxpayers.count

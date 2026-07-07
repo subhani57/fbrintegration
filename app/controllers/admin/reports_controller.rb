@@ -4,7 +4,7 @@ module Admin
       @start_date = parse_date(params[:start_date]) || Date.today.beginning_of_month
       @end_date = parse_date(params[:end_date]) || Date.today.end_of_month
 
-      @invoices = Invoice.excluding_sandbox_tests.with_user
+      @invoices = Invoice.visible_in_admin_portal.with_user
         .where(invoice_date: @start_date..@end_date)
         .order(invoice_date: :desc)
 
