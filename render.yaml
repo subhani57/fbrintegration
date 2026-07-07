@@ -15,38 +15,9 @@ services:
         value: "true"
       - key: DATABASE_URL
         sync: false
-      - key: REDIS_URL
-        sync: false
       - key: RAILS_MASTER_KEY
         sync: false
       - key: SECRET_KEY_BASE
         generateValue: true
-      - key: FBR_SANDBOX_TOKEN
-        sync: false
-      - key: SIDEKIQ_USERNAME
-        sync: false
-      - key: SIDEKIQ_PASSWORD
-        sync: false
-
-  - type: worker
-    name: fbr-integration-worker
-    runtime: docker
-    plan: starter
-    branch: main
-    dockerCommand: bundle exec sidekiq -C config/sidekiq.yml
-    envVars:
-      - key: RAILS_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: REDIS_URL
-        sync: false
-      - key: RAILS_MASTER_KEY
-        sync: false
-      - key: SECRET_KEY_BASE
-        fromService:
-          type: web
-          name: fbr-integration
-          envVarKey: SECRET_KEY_BASE
       - key: FBR_SANDBOX_TOKEN
         sync: false

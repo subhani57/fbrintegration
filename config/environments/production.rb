@@ -67,8 +67,9 @@ Rails.application.configure do
   # Use a different cache store in production.
   # config.cache_store = :mem_cache_store
 
-  # Use Sidekiq for background jobs (FBR validate/submit, reports, etc.)
-  config.active_job.queue_adapter = :sidekiq
+  # Run jobs during the request/cron cycle (no Sidekiq worker required).
+  # Set ACTIVE_JOB_ADAPTER=sidekiq when running a dedicated worker with Redis.
+  config.active_job.queue_adapter = ENV.fetch("ACTIVE_JOB_ADAPTER", "inline").to_sym
 
   config.action_mailer.perform_caching = false
   config.action_mailer.default_url_options = MailerConfig.url_options

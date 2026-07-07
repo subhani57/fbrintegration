@@ -1,7 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
+import { loadHsCodesCatalog } from "hs_codes_cache"
 
 export default class extends Controller {
   connect() {
+    loadHsCodesCatalog()
     this.onInput = this.handleInput.bind(this)
     this.onClick = this.handleClick.bind(this)
     this.onChange = this.handleChange.bind(this)

@@ -1,14 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
+import { getHsCodesCatalog, loadHsCodesCatalog, searchHsCodes } from "hs_codes_cache"
 
 export default class extends Controller {
   static targets = ["input", "hidden", "results"]
   static values = {
-    url: { type: String, default: "/api/v1/reference_data/hs_codes/search" },
+    catalogUrl: { type: String, default: "/api/v1/reference_data/hs_codes" },
+    searchUrl: { type: String, default: "/api/v1/reference_data/hs_codes/search" },
     selected: String
   }
 
   connect() {
-    this.debounceTimer = null
+    this.catalog = getHsCodesCatalog()
+    this.catalogLoading = false
+    this.remoteSearchTimer = null
     this.blurTimer = null
     this.onDocumentClick = this.onDocumentClick.bind(this)
     document.addEventListener("click", this.onDocumentClick)
@@ -17,15 +21,18 @@ export default class extends Controller {
       this.inputTarget.value = this.selectedValue
       this.hiddenTarget.value = this.selectedValue
     }
+
+    this.ensureCatalogLoaded()
   }
 
   disconnect() {
     document.removeEventListener("click", this.onDocumentClick)
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
+    if (this.remoteSearchTimer) clearTimeout(this.remoteSearchTimer)
     if (this.blurTimer) clearTimeout(this.blurTimer)
   }
 
   onFocus() {
+    this.ensureCatalogLoaded()
     const query = this.inputTarget.value.trim()
     if (query.length >= 2) this.search()
   }
@@ -50,28 +57,51 @@ export default class extends Controller {
   search() {
     const query = this.inputTarget.value.trim()
 
-    if (this.debounceTimer) clearTimeout(this.debounceTimer)
-
     if (query.length < 2) {
       this.hideResults()
       return
     }
 
-    this.debounceTimer = setTimeout(() => this.fetchResults(query), 200)
+    if (this.catalog?.length) {
+      this.renderResults(searchHsCodes(this.catalog, query))
+      return
+    }
+
+    this.showLoading()
+    this.ensureCatalogLoaded().then(() => {
+      if (this.catalog?.length) {
+        this.renderResults(searchHsCodes(this.catalog, query))
+        return
+      }
+
+      if (this.remoteSearchTimer) clearTimeout(this.remoteSearchTimer)
+      this.remoteSearchTimer = setTimeout(() => this.fetchResults(query), 150)
+    })
+  }
+
+  ensureCatalogLoaded() {
+    if (this.catalog?.length) return Promise.resolve(this.catalog)
+    if (this.catalogLoading) return loadHsCodesCatalog(this.catalogUrlValue)
+
+    this.catalogLoading = true
+    return loadHsCodesCatalog(this.catalogUrlValue).then((catalog) => {
+      this.catalogLoading = false
+      if (catalog?.length) this.catalog = catalog
+      return this.catalog
+    })
   }
 
   async fetchResults(query) {
     this.showLoading()
 
     try {
-      const url = `${this.urlValue}?q=${encodeURIComponent(query)}`
+      const url = `${this.searchUrlValue}?q=${encodeURIComponent(query)}`
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
           "X-Requested-With": "XMLHttpRequest"
         },
-        credentials: "same-origin",
-        cache: "no-store"
+        credentials: "same-origin"
       })
 
       if (!response.ok) {
