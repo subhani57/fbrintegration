@@ -29,7 +29,7 @@
     </div>
 
     <% if devise_mapping.rememberable? %>
-      <div class="auth-remember">
+      <div class="auth-remember d-none">
         <%= f.check_box :remember_me, class: 'form-check-input' %>
         <%= f.label :remember_me, 'Keep me signed in', class: 'form-check-label' %>
       </div>

@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 module BrandingHelper
+  def brand_nav_label(admin: false)
+    admin ? "#{Branding::APP_SHORT_NAME} Admin" : Branding::APP_SHORT_NAME
+  end
+
   def brand_company_name
     Branding::COMPANY_NAME
   end
