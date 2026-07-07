@@ -21,6 +21,12 @@
   </div>
 </div>
 
+<% if params[:download_receipt].present? %>
+  <div data-controller="receipt-download"
+       data-receipt-download-url-value="<%= admin_subscription_payment_receipt_path(params[:download_receipt]) %>"
+       hidden></div>
+<% end %>
+
 <div class="row g-4">
   <div class="col-lg-5">
     <div class="card mb-4">
@@ -60,8 +66,8 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header"><strong>Record payment</strong></div>
+    <div class="card mb-4">
+      <div class="card-header"><strong>Quick extend</strong></div>
       <div class="card-body">
         <% if @taxpayer.subscription_free_forever? %>
           <p class="text-muted mb-0 small">This account has forever free access. No payments are required.</p>
@@ -70,11 +76,26 @@
         <% end %>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card-header"><strong>Generate receipt</strong></div>
+      <div class="card-body">
+        <% if @taxpayer.subscription_free_forever? %>
+          <p class="text-muted mb-0 small">Receipts are not required for forever free accounts.</p>
+        <% else %>
+          <p class="text-muted small">Creates an unpaid receipt for the customer. Subscription is activated only after you mark it paid.</p>
+          <%= render 'admin/subscriptions/generate_receipt_form', taxpayer: @taxpayer %>
+        <% end %>
+      </div>
+    </div>
   </div>
 
   <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header"><strong>Payment history</strong></div>
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Payment history</strong>
+        <span class="badge bg-secondary"><%= @taxpayer.subscription_payments.count %> total</span>
+      </div>
       <div class="card-body p-0">
         <% if @subscription_payments.any? %>
           <table class="table table-hover mb-0">
@@ -82,10 +103,11 @@
               <tr>
                 <th>Date</th>
                 <th>Receipt</th>
+                <th>Status</th>
+                <th>Breakdown</th>
                 <th>Amount</th>
                 <th>Active until</th>
-                <th>Recorded by</th>
-                <th>Notes</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -94,15 +116,45 @@
                   <td class="text-nowrap"><%= payment.created_at.strftime('%d %b %Y') %></td>
                   <td>
                     <% if payment.receipt_number.present? %>
-                      <%= link_to payment.receipt_number, admin_subscription_payment_receipt_path(payment), class: 'small' %>
+                      <%= link_to payment.receipt_number,
+                          admin_subscription_payment_receipt_path(payment),
+                          class: 'small fw-semibold',
+                          data: { turbo: false } %>
                     <% else %>
                       —
                     <% end %>
                   </td>
-                  <td><%= format_pkr(payment.amount) %></td>
+                  <td>
+                    <% if payment.pending? %>
+                      <span class="badge bg-warning text-dark">Unpaid</span>
+                    <% else %>
+                      <span class="badge bg-success">Paid</span>
+                    <% end %>
+                  </td>
+                  <td class="small">
+                    <% if payment.line_items.any? %>
+                      <% payment.line_items.each do |item| %>
+                        <div><%= item.description %> · <%= format_pkr(item.amount) %></div>
+                      <% end %>
+                    <% elsif payment.months.present? && payment.monthly_fee.present? %>
+                      <%= payment.months %> mo × <%= format_pkr(payment.monthly_fee) %>
+                    <% else %>
+                      <span class="text-muted"><%= payment.notes.presence || 'Subscription payment' %></span>
+                    <% end %>
+                  </td>
+                  <td class="fw-semibold"><%= format_pkr(payment.amount) %></td>
                   <td><%= payment.active_until.strftime('%d %b %Y') %></td>
-                  <td><%= payment.recorded_by&.email || '—' %></td>
-                  <td class="small text-muted"><%= payment.notes.presence || '—' %></td>
+                  <td class="text-end text-nowrap">
+                    <% if payment.pending? %>
+                      <%= button_to 'Mark paid',
+                          admin_mark_subscription_payment_paid_path(payment),
+                          method: :patch,
+                          class: 'btn btn-sm btn-success',
+                          form: { data: confirm_form_data("Mark receipt #{payment.receipt_number} as paid? This will activate the user's subscription until #{payment.active_until.strftime('%d %b %Y')}.") } %>
+                    <% else %>
+                      <span class="small text-muted"><%= payment.recorded_by&.email || '—' %></span>
+                    <% end %>
+                  </td>
                 </tr>
               <% end %>
             </tbody>

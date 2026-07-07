@@ -100,10 +100,13 @@ Rails.application.routes.draw do
     resources :subscriptions, only: [:index, :show] do
       member do
         patch :mark_paid
+        patch :reduce_months
         patch :mark_free_forever
+        post :generate_receipt
       end
     end
     get 'subscription_payments/:payment_id/receipt', to: 'subscriptions#receipt', as: :subscription_payment_receipt
+    patch 'subscription_payments/:payment_id/mark_paid', to: 'subscriptions#mark_receipt_paid', as: :mark_subscription_payment_paid
     resources :audit_logs, only: [:index]
     get 'health', to: 'health#show'
     resources :support_tickets, only: [:index, :show, :update] do

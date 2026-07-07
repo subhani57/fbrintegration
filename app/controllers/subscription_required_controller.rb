@@ -8,6 +8,6 @@ class SubscriptionRequiredController < ApplicationController
   def show
     redirect_to root_path unless current_user.taxpayer?
     redirect_to root_path if current_user.subscription_active?
-    @last_payment = current_user.subscription_payments.recent.first
+    @last_payment = current_user.subscription_payments.paid.recent.first
   end
 end

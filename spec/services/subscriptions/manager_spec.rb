@@ -25,6 +25,59 @@ RSpec.describe Subscriptions::Manager do
       expect(taxpayer.reload.subscription_active?).to be true
       expect { described_class.grant_trial!(taxpayer, recorded_by: admin) }.not_to change(SubscriptionPayment, :count)
     end
+
+    it 'does not treat unpaid receipts as prior payments' do
+      Subscriptions::ReceiptBuilder.call(
+        user: taxpayer,
+        recorded_by: admin,
+        months: 1,
+        monthly_fee: 1000
+      )
+
+      expect(taxpayer.reload.subscription_active?).to be false
+      described_class.grant_trial!(taxpayer, recorded_by: admin)
+      expect(taxpayer.reload.subscription_active?).to be true
+    end
+  end
+
+  describe '.mark_receipt_paid!' do
+    it 'activates the subscription when a pending receipt is marked paid' do
+      payment = Subscriptions::ReceiptBuilder.call(
+        user: taxpayer,
+        recorded_by: admin,
+        months: 2,
+        monthly_fee: 1000
+      )[:payment]
+
+      expect(payment.pending?).to be true
+      expect(taxpayer.reload.subscription_active_until).to be_nil
+
+      described_class.mark_receipt_paid!(payment, recorded_by: admin)
+
+      payment.reload
+      expect(payment.paid?).to be true
+      expect(payment.paid_at).to be_present
+      expect(taxpayer.reload.subscription_active_until).to eq(Date.current + 2.months)
+    end
+  end
+
+  describe '.reduce!' do
+    it 'reduces the subscription expiry date' do
+      taxpayer.update!(subscription_active_until: Date.current + 6.months)
+
+      described_class.reduce!(user: taxpayer, recorded_by: admin, months: 2)
+
+      expect(taxpayer.reload.subscription_active_until).to eq(Date.current + 4.months)
+      expect(taxpayer.subscription_payments.last.notes).to include('Reduced by 2 month(s)')
+    end
+
+    it 'rejects reducing to the same or a later date' do
+      taxpayer.update!(subscription_active_until: Date.current + 1.month)
+
+      expect do
+        described_class.reduce!(user: taxpayer, recorded_by: admin, active_until: Date.current + 2.months)
+      end.to raise_error(Subscriptions::Manager::Error, /before the current expiry/)
+    end
   end
 
   describe '.grant_free_forever!' do

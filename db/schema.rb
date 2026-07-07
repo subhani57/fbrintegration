@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_07_123914) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_07_190000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -255,17 +255,34 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_123914) do
     t.index ["user_id"], name: "index_recurring_invoices_on_user_id"
   end
 
+  create_table "subscription_payment_line_items", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.string "description", null: false
+    t.integer "position", default: 0, null: false
+    t.decimal "quantity", precision: 10, scale: 2, default: "1.0", null: false
+    t.bigint "subscription_payment_id", null: false
+    t.decimal "unit_amount", precision: 10, scale: 2, default: "0.0", null: false
+    t.datetime "updated_at", null: false
+    t.index ["subscription_payment_id"], name: "idx_on_subscription_payment_id_ab5e32706b"
+  end
+
   create_table "subscription_payments", force: :cascade do |t|
     t.date "active_until", null: false
     t.decimal "amount", precision: 10, scale: 2, default: "1000.0", null: false
     t.datetime "created_at", null: false
+    t.decimal "monthly_fee", precision: 10, scale: 2
+    t.integer "months"
     t.text "notes"
+    t.datetime "paid_at"
     t.string "receipt_number"
     t.bigint "recorded_by_id", null: false
+    t.string "status", default: "paid", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["receipt_number"], name: "index_subscription_payments_on_receipt_number", unique: true
     t.index ["recorded_by_id"], name: "index_subscription_payments_on_recorded_by_id"
+    t.index ["status"], name: "index_subscription_payments_on_status"
     t.index ["user_id", "created_at"], name: "index_subscription_payments_on_user_id_and_created_at"
     t.index ["user_id"], name: "index_subscription_payments_on_user_id"
   end
@@ -382,6 +399,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_123914) do
   add_foreign_key "recurring_invoices", "companies", column: "buyer_company_id"
   add_foreign_key "recurring_invoices", "invoice_templates"
   add_foreign_key "recurring_invoices", "users"
+  add_foreign_key "subscription_payment_line_items", "subscription_payments"
   add_foreign_key "subscription_payments", "users"
   add_foreign_key "subscription_payments", "users", column: "recorded_by_id"
   add_foreign_key "support_ticket_replies", "support_tickets"

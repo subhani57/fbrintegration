@@ -1,0 +1,130 @@
+<% extension_base = Subscriptions::Manager.extension_base_date(taxpayer) %>
+<%= form_with url: generate_receipt_admin_subscription_path(taxpayer),
+    method: :post,
+    local: true,
+    class: 'subscription-receipt-form',
+    data: {
+      turbo: false,
+      controller: 'subscription-receipt',
+      subscription_receipt_base_date_value: extension_base.iso8601
+    } do %>
+  <div class="row g-3">
+    <div class="col-sm-4">
+      <label class="form-label small mb-1" for="receipt_months_<%= taxpayer.id %>">Months</label>
+      <%= number_field_tag :months, 1,
+          id: "receipt_months_#{taxpayer.id}",
+          min: 1,
+          class: 'form-control form-control-sm',
+          data: {
+            subscription_receipt_target: 'months',
+            action: 'input->subscription-receipt#recalculate change->subscription-receipt#recalculate'
+          } %>
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label small mb-1" for="receipt_monthly_fee_<%= taxpayer.id %>">Fee per month</label>
+      <%= number_field_tag :monthly_fee, taxpayer.monthly_subscription_fee,
+          id: "receipt_monthly_fee_#{taxpayer.id}",
+          min: 0,
+          step: 0.01,
+          class: 'form-control form-control-sm',
+          data: {
+            subscription_receipt_target: 'monthlyFee',
+            action: 'input->subscription-receipt#recalculate change->subscription-receipt#recalculate'
+          } %>
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label small mb-1" for="receipt_active_until_<%= taxpayer.id %>">Active until</label>
+      <%= date_field_tag :active_until,
+          taxpayer.default_subscription_extension_date,
+          id: "receipt_active_until_#{taxpayer.id}",
+          class: 'form-control form-control-sm',
+          min: Date.current,
+          data: { subscription_receipt_target: 'activeUntil' } %>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <label class="form-label small mb-0">Additional charges</label>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-action="subscription-receipt#addLine">
+        <i class="fas fa-plus"></i> Add line
+      </button>
+    </div>
+    <div data-subscription-receipt-target="extraLines" class="d-flex flex-column gap-2">
+      <div class="row g-2 align-items-end" data-line-row>
+        <div class="col-md-7">
+          <label class="form-label small mb-1">Description</label>
+          <%= text_field_tag 'extra_line_descriptions[]', nil,
+              class: 'form-control form-control-sm',
+              placeholder: 'e.g. Setup fee, training, custom work' %>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small mb-1">Amount</label>
+          <%= number_field_tag 'extra_line_amounts[]', nil,
+              min: 0,
+              step: 0.01,
+              class: 'form-control form-control-sm',
+              placeholder: '0.00',
+              data: {
+                line_amount: true,
+                action: 'input->subscription-receipt#recalculate change->subscription-receipt#recalculate'
+              } %>
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-sm btn-outline-danger w-100" data-action="subscription-receipt#removeLine" title="Remove line">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <label class="form-label small mb-1" for="receipt_notes_<%= taxpayer.id %>">Notes (optional)</label>
+    <%= text_area_tag :notes, nil,
+        id: "receipt_notes_#{taxpayer.id}",
+        rows: 2,
+        class: 'form-control form-control-sm',
+        placeholder: 'Payment reference, bank transfer ID, etc.' %>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+    <div>
+      <span class="text-muted small">Total</span>
+      <div class="fw-semibold" data-subscription-receipt-target="total">
+        <%= format_pkr(taxpayer.monthly_subscription_fee) %>
+      </div>
+    </div>
+    <%= submit_tag 'Generate receipt (unpaid)',
+        class: 'btn btn-success',
+        data: { disable_with: 'Saving…' } %>
+  </div>
+
+  <template data-subscription-receipt-target="lineTemplate">
+    <div class="row g-2 align-items-end" data-line-row>
+      <div class="col-md-7">
+        <label class="form-label small mb-1">Description</label>
+        <input type="text"
+               name="extra_line_descriptions[]"
+               class="form-control form-control-sm"
+               placeholder="What is this charge for?">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small mb-1">Amount</label>
+        <input type="number"
+               name="extra_line_amounts[]"
+               min="0"
+               step="0.01"
+               class="form-control form-control-sm"
+               placeholder="0.00"
+               data-line-amount
+               data-action="input->subscription-receipt#recalculate change->subscription-receipt#recalculate">
+      </div>
+      <div class="col-md-1">
+        <button type="button" class="btn btn-sm btn-outline-danger w-100" data-action="subscription-receipt#removeLine" title="Remove line">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </template>
+<% end %>

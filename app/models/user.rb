@@ -143,7 +143,7 @@ class User < ApplicationRecord
   end
 
   def subscription_never_paid?
-    taxpayer? && !subscription_payments.exists?
+    taxpayer? && !subscription_payments.paid.exists?
   end
 
   def subscription_status
@@ -189,6 +189,14 @@ class User < ApplicationRecord
 
   def extend_subscription!(recorded_by:, months: 1)
     Subscriptions::Manager.extend!(user: self, recorded_by: recorded_by, months: months)
+  end
+
+  def reduce_subscription!(recorded_by:, months: nil, active_until: nil)
+    Subscriptions::Manager.reduce!(user: self, recorded_by: recorded_by, months: months, active_until: active_until)
+  end
+
+  def subscription_reducible?
+    taxpayer? && !subscription_free_forever? && subscription_active_until.present? && subscription_active_until > Date.current
   end
 
   def grant_free_forever!(recorded_by:)
