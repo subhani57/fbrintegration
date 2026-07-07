@@ -72,6 +72,24 @@
     </div>
   <% end %>
 
+  <% if @invoice.iris_syncing? %>
+    <%= turbo_stream_from @invoice %>
+    <div id="invoice-iris-sync-poll"
+         class="alert alert-info d-flex align-items-center gap-3 mb-4 invoice-status-poll"
+         data-controller="invoice-status-poll"
+         data-invoice-status-poll-url-value="<%= status_invoice_path(@invoice, format: :json) %>"
+         data-invoice-status-poll-status-value="true"
+         data-invoice-status-poll-watch-key-value="iris_syncing"
+         role="status"
+         aria-live="polite">
+      <i class="fas fa-spinner fa-spin fa-lg" aria-hidden="true"></i>
+      <div>
+        <strong>Syncing from IRIS…</strong>
+        <div class="small mb-0 opacity-75">This page will refresh automatically when the sync completes.</div>
+      </div>
+    </div>
+  <% end %>
+
   <div class="d-flex flex-wrap gap-2 mb-4 invoice-action-bar">
     <%= link_to invoices_path, class: 'btn btn-outline-secondary' do %>
       <i class="fas fa-arrow-left"></i> All Invoices
@@ -109,7 +127,7 @@
         <% end %>
       <% end %>
     <% end %>
-    <% if current_user.can_manage_invoices? && @invoice.fbr_invoice_id.present? %>
+    <% if current_user.can_manage_invoices? && @invoice.fbr_invoice_id.present? && !@invoice.iris_syncing? %>
       <%= button_to sync_from_iris_invoice_path(@invoice), method: :post, class: 'btn btn-outline-primary', form: { data: { turbo: false } } do %>
         <i class="fas fa-sync"></i> Sync from IRIS
       <% end %>
@@ -351,7 +369,7 @@
         </div>
       <% end %>
 
-      <% if @invoice.error_message.present? %>
+      <% if @invoice.error_message.present? && !invoice_fbr_submitted?(@invoice) %>
         <div class="invoice-detail-card border-danger">
           <div class="invoice-detail-card__header bg-danger text-white">
             <i class="fas fa-exclamation-triangle"></i> Error

@@ -18,6 +18,7 @@ module Fbr
     }.freeze
 
     LEGACY_URL = 'https://gw.fbr.gov.pk/DigitalInvoicing/v1/GetInvoiceDetails'
+    SYNC_HTTP_TIMEOUT = 12
 
     def initialize(user, environment = nil)
       @user = user
@@ -77,7 +78,7 @@ module Fbr
     def sync_invoice!(invoice)
       return { success: false, error_message: 'Invoice has no FBR number.' } if invoice.fbr_invoice_id.blank?
 
-      api_result = fetch_live_status(invoice.fbr_invoice_id, invoice: invoice)
+      api_result = fetch_live_status(invoice.fbr_invoice_id, invoice: invoice, fast: true)
       iris_status = api_result[:iris_status] ||
         detect_iris_status(api_result[:data], error_message: api_result[:error_message])
 
@@ -145,7 +146,9 @@ module Fbr
       "Synced from IRIS (#{source})."
     end
 
-    def fetch_live_status(number, invoice: nil)
+    def fetch_live_status(number, invoice: nil, fast: false)
+      return fetch_live_status_fast(number, invoice: invoice) if fast
+
       last_result = nil
 
       environments_for_invoice(invoice).each do |environment|
@@ -169,6 +172,26 @@ module Fbr
       }
     end
 
+    def fetch_live_status_fast(number, invoice: nil)
+      environments_for_invoice(invoice).each do |environment|
+        service = self.class.new(@user, environment)
+        next unless service.send(:token_configured?)
+
+        result = service.send(:request_from_fbr, number, invoice: invoice, fast: true).merge(environment: environment)
+        iris_status = detect_iris_status(result[:data], error_message: result[:error_message])
+        result[:iris_status] = iris_status
+
+        return result if result[:success]
+        return result if iris_status == :cancelled
+      end
+
+      {
+        success: false,
+        error_message: 'FBR token is not configured.',
+        api_unavailable: true
+      }
+    end
+
     def environments_for_invoice(invoice)
       envs = []
       stored = invoice&.response_data&.dig('submitted_environment')
@@ -183,7 +206,9 @@ module Fbr
       @token.present?
     end
 
-    def request_from_fbr(number, invoice: nil)
+    def request_from_fbr(number, invoice: nil, fast: false)
+      return request_from_fbr_fast(number, invoice: invoice) if fast
+
       return { success: false, error_message: 'FBR token is not configured.' } if @token.blank?
 
       last_result = nil
@@ -221,6 +246,38 @@ module Fbr
       }
     end
 
+    def request_from_fbr_fast(number, invoice: nil)
+      return { success: false, error_message: 'FBR token is not configured.', api_unavailable: true } if @token.blank?
+
+      ntn = seller_ntn_candidates(invoice).first
+      return { success: false, error_message: 'Seller NTN is required for IRIS lookup.', api_unavailable: true } if ntn.blank?
+
+      last_result = nil
+      endpoint = GET_ENDPOINTS[@environment].first
+      payload = payload_variants(number, ntn).first
+      url = "#{DI_BASE[@environment]}/#{endpoint}"
+
+      last_result = try_post(url, payload, timeout: SYNC_HTTP_TIMEOUT)
+      return last_result.merge(source: endpoint, seller_ntn: ntn) if last_result[:success]
+
+      last_result = try_get(url, payload, timeout: SYNC_HTTP_TIMEOUT)
+      return last_result.merge(source: endpoint, seller_ntn: ntn) if last_result[:success]
+
+      legacy = try_post(LEGACY_URL, legacy_payload(number, ntn), timeout: SYNC_HTTP_TIMEOUT)
+      return legacy.merge(source: 'GetInvoiceDetails', seller_ntn: ntn) if legacy[:success]
+
+      {
+        success: false,
+        error_message: last_result&.dig(:error_message) || legacy[:error_message] || 'Could not retrieve invoice from FBR.',
+        data: last_result&.dig(:data) || legacy[:data],
+        http_code: last_result&.dig(:http_code) || legacy[:http_code],
+        api_unavailable: api_lookup_unavailable?(
+          last_result&.dig(:error_message) || legacy[:error_message],
+          last_result&.dig(:http_code) || legacy[:http_code]
+        )
+      }
+    end
+
     def seller_ntn_candidates(invoice)
       candidates = [
         invoice&.seller_ntn,
@@ -254,12 +311,12 @@ module Fbr
       message.to_s.match?(/403|404|forbidden|No matching resource|900908/i)
     end
 
-    def try_post(url, payload)
+    def try_post(url, payload, timeout: 45)
       response = self.class.post(
         url,
         body: payload.to_json,
         headers: request_headers,
-        timeout: 45
+        timeout: timeout
       )
 
       parse_response(response)
@@ -268,12 +325,12 @@ module Fbr
       { success: false, error_message: e.message }
     end
 
-    def try_get(url, payload)
+    def try_get(url, payload, timeout: 45)
       response = self.class.get(
         url,
         query: payload,
         headers: request_headers,
-        timeout: 45
+        timeout: timeout
       )
 
       parse_response(response)

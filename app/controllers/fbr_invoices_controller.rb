@@ -66,13 +66,14 @@ class FbrInvoicesController < ApplicationController
       return
     end
 
-    result = Fbr::IrisInvoiceService.new(portal_user).sync_invoice!(@invoice)
-    if result[:success]
-      notice = result[:notice].presence || "Synced from FBR (#{result[:source]})."
-      redirect_to fbr_invoice_path(@invoice), notice: notice
-    else
-      redirect_to fbr_invoice_path(@invoice), alert: result[:error_message]
+    if @invoice.iris_syncing?
+      redirect_to fbr_invoice_path(@invoice), notice: 'IRIS sync is already in progress. This page will update automatically.'
+      return
     end
+
+    @invoice.mark_iris_syncing!
+    Fbr::JobRunner.enqueue(InvoiceIrisSyncJob, @invoice.id, current_user.id)
+    redirect_to fbr_invoice_path(@invoice), notice: 'Syncing from IRIS. This page will update automatically.'
   end
 
   private

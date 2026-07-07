@@ -237,6 +237,26 @@ class Invoice < ApplicationRecord
     cancelled? && fbr_status == 'cancelled'
   end
 
+  def iris_syncing?
+    return false unless response_data.is_a?(Hash)
+    return false if response_data['iris_syncing_at'].blank?
+
+    Time.zone.parse(response_data['iris_syncing_at'].to_s) > 2.minutes.ago
+  rescue ArgumentError
+    false
+  end
+
+  def mark_iris_syncing!
+    merged = (response_data || {}).merge('iris_syncing_at' => Time.current.iso8601)
+    update!(response_data: merged)
+  end
+
+  def clear_iris_syncing!
+    return unless response_data.is_a?(Hash) && response_data.key?('iris_syncing_at')
+
+    update!(response_data: response_data.except('iris_syncing_at'))
+  end
+
   def apply_iris_cancellation!(source_data: nil, message: nil)
     return true if iris_cancelled?
 

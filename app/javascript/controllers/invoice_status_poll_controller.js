@@ -4,7 +4,8 @@ export default class extends Controller {
   static values = {
     url: String,
     status: String,
-    retryUrl: String
+    retryUrl: String,
+    watchKey: { type: String, default: "status" }
   }
 
   connect() {
@@ -70,7 +71,8 @@ export default class extends Controller {
       if (!response.ok) return
 
       const data = await response.json()
-      if (data.status !== this.statusValue) {
+      const currentValue = String(data[this.watchKeyValue])
+      if (currentValue !== this.statusValue) {
         this.refreshPage()
       }
     } catch (_) {

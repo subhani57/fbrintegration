@@ -167,7 +167,8 @@ class InvoicesController < ApplicationController
       status: @invoice.status,
       fbr_status: @invoice.fbr_status,
       fbr_invoice_id: @invoice.fbr_invoice_id,
-      error_message: @invoice.error_message
+      error_message: @invoice.error_message,
+      iris_syncing: @invoice.iris_syncing?
     }
   end
 
@@ -189,13 +190,15 @@ class InvoicesController < ApplicationController
       return
     end
 
-    result = Fbr::IrisInvoiceService.new(portal_user).sync_invoice!(@invoice)
-    if result[:success]
-      notice = result[:notice].presence || "Synced from IRIS (#{result[:source]})."
-      redirect_to @invoice, notice: notice
-    else
-      redirect_to @invoice, alert: result[:error_message]
+    if @invoice.iris_syncing?
+      redirect_to @invoice, notice: 'IRIS sync is already in progress. This page will update automatically.'
+      return
     end
+
+    @invoice.mark_iris_syncing!
+    Fbr::JobRunner.enqueue(InvoiceIrisSyncJob, @invoice.id, current_user.id)
+    AuditLog.record!(user: current_user, action: 'invoice.iris_sync_queued', auditable: @invoice, request: request)
+    redirect_to @invoice, notice: 'Syncing from IRIS. This page will update automatically.'
   rescue Pundit::NotAuthorizedError
     redirect_to @invoice, alert: 'You are not authorized to sync this invoice.'
   end
