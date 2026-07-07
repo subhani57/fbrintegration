@@ -7,7 +7,7 @@
         <p class="text-muted mb-2">
           Please pay your monthly subscription of
           <strong><%= format_pkr(User::MONTHLY_SUBSCRIPTION_FEE) %></strong>
-          to continue access to the FBR invoicing portal.
+          to continue access to the <%= brand_product_name %> portal.
         </p>
         <% if current_user.subscription_active_until.present? %>
           <p class="small text-muted mb-3">

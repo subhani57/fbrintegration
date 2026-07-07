@@ -9,7 +9,7 @@ module Subscriptions
 
     def to_text
       <<~TEXT
-        FBR Digital Invoicing — Payment Receipt
+        #{Branding::APP_NAME} — Payment Receipt
         Receipt #: #{@payment.receipt_number}
         Date: #{@payment.created_at.strftime('%d %B %Y')}
         Taxpayer: #{@user.email}

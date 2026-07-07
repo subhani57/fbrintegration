@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FBR Digital Invoicing System</title>
+  <title><%= content_for?(:page_title) ? brand_page_title(yield(:page_title)) : brand_app_name %></title>
+  <link rel="icon" href="<%= image_path('logo.png') %>" type="image/png">
   
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
@@ -27,9 +28,7 @@
   <!-- Navigation (persistent across Turbo visits) -->
   <nav class="navbar navbar-expand-lg navbar-dark navbar-fbr" id="fbr-main-navbar">
     <div class="container-fluid">
-      <%= link_to root_path, class: 'navbar-brand' do %>
-        <i class="fas fa-file-invoice-dollar"></i> FBR Invoicing
-      <% end %>
+      <%= render 'shared/navbar_brand', path: root_path, label: brand_company_name, admin: false %>
       
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
         <span class="navbar-toggler-icon"></span>
@@ -93,12 +92,12 @@
       <div class="row">
         <div class="col-md-6">
           <p class="text-muted mb-0">
-            <i class="fas fa-copyright"></i> <%= Time.current.year %> FBR Digital Invoicing System
+            <i class="fas fa-copyright"></i> <%= Time.current.year %> <%= Branding::FOOTER_LINE %>
           </p>
         </div>
         <div class="col-md-6 text-end">
           <p class="text-muted mb-0">
-            <i class="fas fa-headset"></i> Support: support@fbr-invoicing.com
+            <i class="fas fa-headset"></i> Support: <%= mail_to brand_support_email, brand_support_email, class: 'text-muted' %>
           </p>
         </div>
       </div>

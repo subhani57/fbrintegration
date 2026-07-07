@@ -195,6 +195,10 @@ class User < ApplicationRecord
     Subscriptions::Manager.grant_free_forever!(self, recorded_by: recorded_by)
   end
 
+  def send_devise_notification(notification, *args)
+    devise_mailer.send(notification, self, *args).deliver_later
+  end
+
   def advance_onboarding!
     update!(onboarding_step: [onboarding_step + 1, 3].min)
   end

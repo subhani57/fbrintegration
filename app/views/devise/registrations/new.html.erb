@@ -6,7 +6,7 @@
   </div>
 
   <h2 class="auth-card__title">Create your account</h2>
-  <p class="auth-card__subtitle">Start submitting FBR-compliant invoices today</p>
+  <p class="auth-card__subtitle">Join <%= brand_company_name %> and start submitting FBR-compliant invoices</p>
 
   <%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { class: 'auth-form' }) do |f| %>
     <%= render 'devise/shared/error_messages', resource: resource %>

@@ -1,4 +1,4 @@
-/* FBR Digital Invoicing — green brand theme (matches PDF) */
+/* Integron Technologies — FBR invoicing theme */
 
 :root {
   --fbr-primary: #157347;
@@ -52,6 +52,38 @@ body.fbr-app .container-fluid.mt-3 {
 .navbar-fbr .navbar-brand {
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.brand-nav-link {
+  gap: 0.65rem;
+}
+
+.brand-logo--nav {
+  height: 36px;
+  width: auto;
+  max-width: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+.brand-logo--nav-admin {
+  max-width: 38px;
+}
+
+.brand-nav-text {
+  font-size: 1rem;
+  line-height: 1.2;
+  max-width: 14rem;
+}
+
+.brand-nav-link--admin .brand-nav-text {
+  max-width: 11rem;
+}
+
+@media (max-width: 991.98px) {
+  .brand-nav-text {
+    max-width: none;
+  }
 }
 
 .navbar-fbr .nav-link {

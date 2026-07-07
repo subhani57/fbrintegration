@@ -21,3 +21,11 @@ services:
         generateValue: true
       - key: FBR_SANDBOX_TOKEN
         sync: false
+      - key: APP_HOST
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: MAILER_FROM
+        value: noreply@integrontechnologies.com
+      - key: SUPPORT_EMAIL
+        value: support@integrontechnologies.com

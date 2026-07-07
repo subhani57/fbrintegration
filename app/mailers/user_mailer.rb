@@ -3,7 +3,7 @@
 class UserMailer < ApplicationMailer
   def account_approved(user)
     @user = user
-    mail(to: user.email, subject: 'Your FBR Invoicing account has been approved')
+    mail(to: user.email, subject: "Your #{Branding::APP_SHORT_NAME} account has been approved")
   end
 
   def admin_failed_submissions_alert(admin, invoices)

@@ -57,7 +57,7 @@ module Subscriptions
         Notification.notify!(
           user,
           title: 'Forever free access granted',
-          body: 'Your account now has unlimited free access to FBR invoicing.',
+          body: "Your account now has unlimited free access to #{Branding::PRODUCT_NAME}.",
           notification_type: 'success',
           link_path: '/dashboard'
         )
@@ -134,7 +134,7 @@ module Subscriptions
             link_path: '/subscription_required'
           )
           mark_reminder_sent!(user, 'subscription.expiring_soon')
-          Notifications::SmsDelivery.deliver(user, "FBR Invoicing: subscription expires #{user.subscription_active_until.strftime('%d %b %Y')}.")
+          Notifications::SmsDelivery.deliver(user, "#{Branding::SMS_PREFIX}: subscription expires #{user.subscription_active_until.strftime('%d %b %Y')}.")
           reminded += 1
         end
 

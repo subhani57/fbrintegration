@@ -476,7 +476,8 @@ class PdfGenerator
     totals_w = 210
     left_w = w - totals_w
 
-    compliance = '<b>FBR Digital Invoicing</b>'
+    compliance = "<b>#{Branding::PDF_FOOTER}</b>"
+    compliance += "\n#{Branding::PRODUCT_NAME}"
     compliance += "\nOfficial computer-generated sales tax invoice."
     compliance += "\nVerify at iris.fbr.gov.pk"
     compliance += "\nSubmitted: #{@invoice.submitted_at.strftime('%d %b %Y, %I:%M %p')}" if @invoice.submitted_at.present?

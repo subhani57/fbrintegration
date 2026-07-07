@@ -3,11 +3,20 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <style>
-      /* Email styles need to be inline */
+      body { font-family: Arial, sans-serif; color: #1e293b; line-height: 1.5; }
+      .mail-brand { border-bottom: 3px solid #157347; padding-bottom: 12px; margin-bottom: 20px; }
+      .mail-brand strong { color: #0f5132; font-size: 18px; }
+      .mail-brand span { display: block; color: #64748b; font-size: 13px; margin-top: 4px; }
+      .mail-footer { margin-top: 24px; font-size: 12px; color: #64748b; }
     </style>
   </head>
 
   <body>
+    <div class="mail-brand">
+      <strong><%= Branding::COMPANY_NAME %></strong>
+      <span><%= Branding::PRODUCT_NAME %></span>
+    </div>
     <%= yield %>
+    <p class="mail-footer">&copy; <%= Time.current.year %> <%= Branding::FOOTER_LINE %></p>
   </body>
 </html>

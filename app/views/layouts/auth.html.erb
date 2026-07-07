@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FBR Digital Invoicing — <%= content_for?(:auth_title) ? yield(:auth_title) : 'Sign In' %></title>
+  <title><%= brand_page_title(content_for?(:auth_title) ? yield(:auth_title) : 'Sign In') %></title>
+  <link rel="icon" href="<%= image_path('logo.png') %>" type="image/png">
 
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
@@ -17,20 +18,22 @@
   <div class="auth-page">
     <aside class="auth-brand" aria-hidden="true">
       <div class="auth-brand__inner">
+        <%= brand_banner_image class: 'auth-brand__banner-img' %>
         <div class="auth-brand__logo">
-          <i class="fas fa-file-invoice-dollar"></i>
+          <%= brand_logo_image class: 'auth-brand__logo-img' %>
         </div>
-        <h1 class="auth-brand__title">FBR Digital Invoicing</h1>
-        <p class="auth-brand__tagline">Create, validate, and submit sales tax invoices to the Federal Board of Revenue — all in one place.</p>
+        <h1 class="auth-brand__title"><%= brand_company_name %></h1>
+        <p class="auth-brand__product"><%= brand_product_name %></p>
+        <p class="auth-brand__tagline"><%= brand_tagline %></p>
 
         <ul class="auth-brand__features">
           <li><i class="fas fa-check-circle"></i> FBR-compliant invoice submission</li>
           <li><i class="fas fa-check-circle"></i> Branded PDF downloads with your logo</li>
-          <li><i class="fas fa-check-circle"></i> Secure taxpayer dashboard</li>
+          <li><i class="fas fa-check-circle"></i> Secure taxpayer dashboard by <%= brand_company_name %></li>
         </ul>
 
         <p class="auth-brand__footer">
-          <i class="fas fa-shield-alt"></i> Trusted by Pakistani businesses
+          <i class="fas fa-shield-alt"></i> Trusted FBR integration platform
         </p>
       </div>
       <div class="auth-brand__orb auth-brand__orb--1"></div>
@@ -45,7 +48,7 @@
       </div>
 
       <p class="auth-main__copyright">
-        &copy; <%= Time.current.year %> FBR Digital Invoicing System
+        &copy; <%= Time.current.year %> <%= Branding::FOOTER_LINE %>
       </p>
     </main>
   </div>

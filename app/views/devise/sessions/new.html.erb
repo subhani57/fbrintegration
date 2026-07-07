@@ -6,7 +6,7 @@
   </div>
 
   <h2 class="auth-card__title">Welcome back</h2>
-  <p class="auth-card__subtitle">Sign in to manage your FBR invoices</p>
+  <p class="auth-card__subtitle">Sign in to <%= brand_product_name %></p>
 
   <%= form_for(resource, as: resource_name, url: session_path(resource_name),
       html: { class: 'auth-form', data: { turbo: false } }) do |f| %>

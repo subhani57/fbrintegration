@@ -1,0 +1,5 @@
+<%# locals: (path:, label:, admin: false) %>
+<%= link_to path, class: "navbar-brand d-flex align-items-center gap-2 brand-nav-link #{'brand-nav-link--admin' if admin}" do %>
+  <%= brand_logo_image class: "brand-logo brand-logo--nav #{'brand-logo--nav-admin' if admin}" %>
+  <span class="brand-nav-text"><%= label %></span>
+<% end %>

@@ -1,4 +1,5 @@
 module ApplicationHelper
+  include BrandingHelper
   include ConfirmFormHelper
 
   def status_badge_color(status)
