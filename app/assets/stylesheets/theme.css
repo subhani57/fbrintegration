@@ -21,8 +21,10 @@
 }
 
 /* ── Base ── */
-html {
-  overflow-x: hidden;
+@media (min-width: 992px) {
+  html {
+    overflow-x: hidden;
+  }
 }
 
 body.fbr-app {

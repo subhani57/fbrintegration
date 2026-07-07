@@ -5,7 +5,7 @@ module System
     def self.report
       {
         database: database_ok?,
-        redis: redis_ok?,
+        redis: redis_status,
         sidekiq: sidekiq_stats,
         fbr_api: fbr_api_stats,
         subscriptions: Subscriptions::Manager.stats,
@@ -20,9 +20,29 @@ module System
     end
 
     def self.redis_ok?
-      Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1')).ping == 'PONG'
+      redis_ping == 'PONG'
     rescue StandardError
       false
+    end
+
+    def self.redis_status
+      ping = redis_ping
+      { ok: ping == 'PONG', ping: ping }
+    rescue StandardError => e
+      { ok: false, error: e.message }
+    end
+
+    def self.redis_ping
+      redis_client.call('PING')
+    end
+
+    def self.redis_client
+      url = ENV.fetch('REDIS_URL', 'redis://localhost:6379/1')
+      config = { url: url }
+      if url.start_with?('rediss://')
+        config[:ssl_params] = { verify_mode: OpenSSL::SSL::VERIFY_NONE }
+      end
+      RedisClient.new(**config)
     end
 
     def self.sidekiq_stats

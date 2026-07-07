@@ -111,7 +111,7 @@ class InvoicesController < ApplicationController
 
   def submit
     if @invoice.submitting? && @invoice.fbr_invoice_id.blank?
-      FbrSubmissionJob.perform_later(@invoice.id)
+      Fbr::JobRunner.enqueue(FbrSubmissionJob, @invoice.id)
       redirect_to @invoice, notice: 'Retrying FBR submission. This page will update automatically.'
       return
     end
@@ -128,7 +128,7 @@ class InvoicesController < ApplicationController
 
     @invoice.submit_to_fbr! if @invoice.may_submit_to_fbr?
     AuditLog.record!(user: current_user, action: 'invoice.submit_queued', auditable: @invoice, request: request)
-    redirect_to @invoice, notice: 'Invoice queued for FBR submission. This page will update automatically.'
+    redirect_to @invoice, notice: 'Submitting to FBR. This page will update automatically.'
   rescue AASM::InvalidTransition => e
     redirect_to @invoice, alert: "Error: #{e.message}"
   end
@@ -147,7 +147,7 @@ class InvoicesController < ApplicationController
 
     @invoice.validate_invoice! if @invoice.may_validate_invoice?
     AuditLog.record!(user: current_user, action: 'invoice.validate_queued', auditable: @invoice, request: request)
-    redirect_to @invoice, notice: 'Invoice validation queued. This page will update automatically.'
+    redirect_to @invoice, notice: 'Validating with FBR. This page will update automatically.'
   rescue AASM::InvalidTransition
     service = Fbr::ApiService.new(portal_user, portal_user.default_fbr_environment.to_sym)
     result = service.validate_invoice(@invoice)
@@ -255,7 +255,7 @@ class InvoicesController < ApplicationController
       skipped_count += 1
     end
 
-    notice = "#{queued_count} invoice(s) queued for FBR submission."
+    notice = "#{queued_count} invoice(s) submitted to FBR."
     notice += " #{skipped_count} skipped." if skipped_count.positive?
 
     redirect_back fallback_location: invoices_path, notice: notice

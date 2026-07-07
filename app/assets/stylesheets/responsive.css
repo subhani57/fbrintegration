@@ -1,0 +1,382 @@
+/* Mobile & tablet responsive — desktop web (≥992px) unchanged */
+
+/* ── Horizontal scroll on mobile & tablet ── */
+@media (max-width: 991.98px) {
+  html,
+  body.fbr-app,
+  body.auth-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Main content spacing ── */
+@media (max-width: 991.98px) {
+  .fbr-main-content.container-fluid,
+  .admin-main .container-fluid,
+  .admin-main.fbr-main-content > .container-fluid {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .fbr-footer .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .fbr-main-content.container-fluid,
+  .admin-main .container-fluid,
+  .admin-main.fbr-main-content > .container-fluid {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* ── Page headers & toolbars ── */
+@media (max-width: 991.98px) {
+  .fbr-main-content > .d-flex.justify-content-between,
+  .fbr-main-content .d-flex.justify-content-between.mb-4,
+  .admin-main .d-flex.justify-content-between.mb-4,
+  .fbr-page-header.d-flex.justify-content-between {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .fbr-page-header h1,
+  .fbr-page-header h2,
+  .fbr-page-header .h3 {
+    font-size: 1.35rem;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .d-flex.justify-content-between.align-items-center:not(.flex-wrap),
+  .d-flex.justify-content-between.align-items-start:not(.flex-wrap),
+  .d-flex.justify-content-between.mb-4:not(.flex-wrap) {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .d-flex.justify-content-between.align-items-start {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .d-flex.justify-content-between.align-items-start > .btn,
+  .d-flex.justify-content-between.align-items-start > .btn-group {
+    align-self: flex-start;
+  }
+}
+
+/* ── Footer ── */
+@media (max-width: 767.98px) {
+  .fbr-footer .row > [class*="col-"] {
+    text-align: center !important;
+  }
+
+  .fbr-footer .text-end {
+    text-align: center !important;
+    margin-top: 0.5rem;
+  }
+}
+
+/* ── Tables: horizontal scroll ── */
+@media (max-width: 991.98px) {
+  .fbr-main-content .card:has(> .table),
+  .fbr-main-content .card .card-body.p-0:has(> .table),
+  .admin-main .card:has(> .table),
+  .admin-main .card .card-body.p-0:has(> .table),
+  .invoice-form-page .card:has(> .table),
+  .invoice-form-page .card .card-body.p-0:has(> .table),
+  .invoice-show-page .card:has(> .table),
+  .invoice-show-page .card .card-body.p-0:has(> .table) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .fbr-main-content .table-responsive,
+  .admin-main .table-responsive,
+  .invoice-form-page .table-responsive,
+  .invoice-show-page .table-responsive {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .fbr-invoice-table {
+    table-layout: auto;
+    min-width: 42rem;
+  }
+
+  .fbr-invoice-table .fbr-invoice-table__buyer {
+    max-width: none;
+    white-space: normal;
+  }
+}
+
+/* ── List groups ── */
+@media (max-width: 767.98px) {
+  .list-group-item.d-flex.justify-content-between,
+  .list-group-item.d-flex.justify-content-between.align-items-center,
+  .list-group-item.d-flex.justify-content-between.align-items-start {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.75rem;
+  }
+
+  .list-group-item.d-flex .btn,
+  .list-group-item.d-flex .btn-group,
+  .list-group-item.d-flex form {
+    align-self: flex-start;
+  }
+}
+
+/* ── Card headers & bodies ── */
+@media (max-width: 767.98px) {
+  .card-header.d-flex {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .card-body.d-flex.justify-content-between,
+  .card-body .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.75rem;
+  }
+
+  .card-body.d-flex.justify-content-between .btn,
+  .card-body .d-flex.justify-content-between .btn {
+    align-self: flex-start;
+  }
+}
+
+/* ── Invoice pages ── */
+@media (max-width: 991.98px) {
+  .invoice-hero {
+    padding: 1.25rem 1rem;
+  }
+
+  .invoice-hero__number {
+    font-size: 1.35rem;
+    word-break: break-word;
+  }
+
+  .invoice-hero .text-md-end {
+    text-align: left !important;
+  }
+
+  .invoice-hero__badge {
+    display: inline-flex;
+    margin-top: 0.35rem;
+    margin-left: 0 !important;
+  }
+
+  .invoice-download-panel__header {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.25rem;
+  }
+
+  .invoice-download-panel__body {
+    padding: 1.25rem;
+  }
+
+  .invoice-detail-card__header {
+    flex-wrap: wrap;
+  }
+
+  .invoice-form-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .invoice-form-hero__content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .invoice-form-hero__back {
+    width: 100%;
+    text-align: center;
+  }
+
+  .invoice-form-item__header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .invoice-action-bar .btn {
+    flex: 1 1 auto;
+    min-width: calc(50% - 0.5rem);
+    justify-content: center;
+  }
+}
+
+/* ── Navbar (collapsed) ── */
+@media (max-width: 991.98px) {
+  .fbr-nav-actions {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 0.5rem 0;
+    flex-wrap: wrap;
+    gap: 0.5rem !important;
+  }
+
+  .fbr-nav-actions .nav-item {
+    width: 100%;
+  }
+
+  .fbr-nav-new-invoice {
+    width: 100%;
+    text-align: center;
+    display: block;
+  }
+
+  .fbr-env-switcher-wrap {
+    width: 100%;
+  }
+
+  .fbr-env-switcher {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fbr-user-menu {
+    width: 100%;
+  }
+
+  .fbr-user-menu-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .navbar-fbr .container-fluid {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* ── Stat cards ── */
+@media (max-width: 575.98px) {
+  .fbr-stat-card:hover {
+    transform: none;
+  }
+
+  .fbr-stat-icon {
+    padding: 0.65rem;
+  }
+
+  .fbr-stat-icon i {
+    font-size: 1.15rem;
+  }
+}
+
+/* ── Pagination ── */
+@media (max-width: 767.98px) {
+  .fbr-pagination-footer__controls {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .fbr-pagination-footer__per {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .fbr-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Banners & alerts ── */
+@media (max-width: 575.98px) {
+  #fbr-environment-banner .alert,
+  .alert.d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.5rem;
+  }
+
+  .alert.d-flex.align-items-center,
+  .alert.d-flex.align-items-start {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+}
+
+/* ── Forms, code & long text ── */
+@media (max-width: 767.98px) {
+  .fbr-main-content code,
+  .admin-main code,
+  .invoice-show-page code,
+  .invoice-form-page code {
+    word-break: break-word;
+  }
+
+  pre,
+  textarea.font-monospace {
+    font-size: 0.8rem;
+    word-break: break-word;
+  }
+
+  /* Prevents iOS zoom on input focus */
+  .form-control,
+  .form-select {
+    font-size: 16px;
+  }
+}
+
+/* ── Charts ── */
+@media (max-width: 991.98px) {
+  .fbr-main-content canvas,
+  .admin-main canvas {
+    max-width: 100%;
+    height: auto !important;
+  }
+}
+
+/* ── Definition lists (profile, admin show) ── */
+@media (max-width: 575.98px) {
+  dl.row dt,
+  dl.row dd {
+    width: 100%;
+  }
+
+  dl.row dt {
+    margin-bottom: 0.15rem;
+  }
+
+  dl.row dd {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* ── Compact table action buttons ── */
+@media (max-width: 575.98px) {
+  .table td.text-nowrap .btn,
+  .table th .btn {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.72rem;
+  }
+}
+
+/* ── Auth layout tweaks (auth.css handles structure) ── */
+@media (max-width: 991.98px) {
+  .auth-main__content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-main__content {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

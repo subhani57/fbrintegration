@@ -11,7 +11,10 @@
   <div class="col-md-3">
     <div class="card fbr-stat-card"><div class="card-body">
       <small class="text-muted">Redis</small>
-      <div class="h5 mb-0 <%= @report[:redis] ? 'text-success' : 'text-danger' %>"><%= @report[:redis] ? 'OK' : 'Down' %></div>
+      <div class="h5 mb-0 <%= @report[:redis][:ok] ? 'text-success' : 'text-danger' %>"><%= @report[:redis][:ok] ? 'OK' : 'Down' %></div>
+      <% if @report[:redis][:error].present? %>
+        <div class="small text-muted mt-1"><%= @report[:redis][:error] %></div>
+      <% end %>
     </div></div>
   </div>
   <div class="col-md-6">
@@ -31,8 +34,10 @@
   <div class="card-body">
     <% if @report[:sidekiq][:available] %>
       <p class="mb-0">Processed: <%= @report[:sidekiq][:processed] %> · Enqueued: <%= @report[:sidekiq][:enqueued] %> · Busy: <%= @report[:sidekiq][:busy] %></p>
+    <% elsif Rails.application.config.active_job.queue_adapter == :inline %>
+      <p class="text-muted mb-0">Jobs run inline during requests (no Sidekiq worker).</p>
     <% else %>
-      <p class="text-muted mb-0">Sidekiq stats unavailable.</p>
+      <p class="text-muted mb-0">Sidekiq stats unavailable<%= ": #{@report[:sidekiq][:error]}" if @report[:sidekiq][:error].present? %>.</p>
     <% end %>
   </div>
 </div>
