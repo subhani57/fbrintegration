@@ -80,6 +80,38 @@ RSpec.describe Subscriptions::Manager do
     end
   end
 
+  describe '.destroy_payment!' do
+    it 'deletes the payment and recalculates subscription access from remaining paid records' do
+      older = Subscriptions::Manager.record_payment!(
+        user: taxpayer,
+        active_until: Date.current + 1.month,
+        recorded_by: admin
+      )
+      newer = Subscriptions::Manager.record_payment!(
+        user: taxpayer,
+        active_until: Date.current + 4.months,
+        recorded_by: admin
+      )
+
+      described_class.destroy_payment!(newer, recorded_by: admin)
+
+      expect(SubscriptionPayment.exists?(newer.id)).to be false
+      expect(taxpayer.reload.subscription_active_until).to eq(older.active_until)
+    end
+
+    it 'clears subscription access when the last paid payment is deleted' do
+      payment = Subscriptions::Manager.record_payment!(
+        user: taxpayer,
+        active_until: Date.current + 1.month,
+        recorded_by: admin
+      )
+
+      described_class.destroy_payment!(payment, recorded_by: admin)
+
+      expect(taxpayer.reload.subscription_active_until).to be_nil
+    end
+  end
+
   describe '.grant_free_forever!' do
     it 'marks the taxpayer as free forever and records a zero payment' do
       described_class.grant_free_forever!(taxpayer, recorded_by: admin)

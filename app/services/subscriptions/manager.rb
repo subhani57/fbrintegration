@@ -244,6 +244,30 @@ module Subscriptions
         nil
       end
 
+      def sync_subscription_active_until!(user)
+        latest = user.subscription_payments.paid.order(active_until: :desc, created_at: :desc).first
+        user.update!(subscription_active_until: latest&.active_until)
+      end
+
+      def destroy_payment!(payment, recorded_by:)
+        user = payment.user
+        raise Error, 'Subscriptions apply to taxpayer accounts only.' unless user.taxpayer?
+
+        receipt_number = payment.receipt_number
+        user.transaction do
+          payment.destroy!
+          sync_subscription_active_until!(user)
+        end
+
+        AppLogger.info(
+          'subscription.payment_deleted',
+          user_id: user.id,
+          recorded_by_id: recorded_by.id,
+          receipt_number: receipt_number
+        )
+        user
+      end
+
       def extension_base_date(user)
         [user.subscription_active_until, Date.current].compact.max
       end

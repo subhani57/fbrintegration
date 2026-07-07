@@ -107,6 +107,7 @@ Rails.application.routes.draw do
     end
     get 'subscription_payments/:payment_id/receipt', to: 'subscriptions#receipt', as: :subscription_payment_receipt
     patch 'subscription_payments/:payment_id/mark_paid', to: 'subscriptions#mark_receipt_paid', as: :mark_subscription_payment_paid
+    delete 'subscription_payments/:payment_id', to: 'subscriptions#destroy_payment', as: :subscription_payment
     resources :audit_logs, only: [:index]
     get 'health', to: 'health#show'
     resources :support_tickets, only: [:index, :show, :update] do

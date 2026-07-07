@@ -86,6 +86,26 @@ module Admin
       redirect_back fallback_location: admin_subscription_path(payment&.user || @taxpayer), alert: e.message
     end
 
+    def destroy_payment
+      payment = SubscriptionPayment.find(params[:payment_id])
+      taxpayer = payment.user
+      receipt_number = payment.receipt_number
+
+      Subscriptions::Manager.destroy_payment!(payment, recorded_by: current_user)
+      AuditLog.record!(
+        user: current_user,
+        action: 'subscription.payment_deleted',
+        auditable: taxpayer,
+        metadata: { receipt_number: receipt_number },
+        request: request
+      )
+
+      redirect_to admin_subscription_path(taxpayer),
+                  notice: "Payment#{receipt_number.present? ? " #{receipt_number}" : ''} deleted."
+    rescue Subscriptions::Manager::Error => e
+      redirect_back fallback_location: admin_subscription_path(payment&.user), alert: e.message
+    end
+
     def mark_paid
       if params[:period].present?
         months = Subscriptions::Manager::PERIOD_OPTIONS.fetch(params[:period].to_s)

@@ -145,15 +145,22 @@
                   <td class="fw-semibold"><%= format_pkr(payment.amount) %></td>
                   <td><%= payment.active_until.strftime('%d %b %Y') %></td>
                   <td class="text-end text-nowrap">
-                    <% if payment.pending? %>
-                      <%= button_to 'Mark paid',
-                          admin_mark_subscription_payment_paid_path(payment),
-                          method: :patch,
-                          class: 'btn btn-sm btn-success',
-                          form: { data: confirm_form_data("Mark receipt #{payment.receipt_number} as paid? This will activate the user's subscription until #{payment.active_until.strftime('%d %b %Y')}.") } %>
-                    <% else %>
-                      <span class="small text-muted"><%= payment.recorded_by&.email || '—' %></span>
-                    <% end %>
+                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                      <% if payment.pending? %>
+                        <%= button_to 'Mark paid',
+                            admin_mark_subscription_payment_paid_path(payment),
+                            method: :patch,
+                            class: 'btn btn-sm btn-success',
+                            form: { data: confirm_form_data("Mark receipt #{payment.receipt_number} as paid? This will activate the user's subscription until #{payment.active_until.strftime('%d %b %Y')}.") } %>
+                      <% end %>
+                      <%= button_to admin_subscription_payment_path(payment),
+                          method: :delete,
+                          class: 'btn btn-sm btn-outline-danger',
+                          title: 'Delete payment',
+                          form: { data: confirm_form_data("Delete this payment#{payment.receipt_number.present? ? " (#{payment.receipt_number})" : ''}? This cannot be undone.") } do %>
+                        <i class="fas fa-trash"></i>
+                      <% end %>
+                    </div>
                   </td>
                 </tr>
               <% end %>
