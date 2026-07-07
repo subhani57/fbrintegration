@@ -2,6 +2,7 @@
 
 module Subscriptions
   class Manager
+    EXPIRING_SOON_DAYS = 7
     FOREVER_FREE_PAYMENT_UNTIL = Date.new(2099, 12, 31)
     TRIAL_DAYS = 7
     PERIOD_OPTIONS = {
