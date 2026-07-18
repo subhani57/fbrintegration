@@ -67,4 +67,23 @@ RSpec.describe Invoices::CsvImporter do
     expect(invoice.pdf_invoice_number).to be_present
     expect(invoice.pdf_invoice_number).to match(/\A\d{8}-\d{4}\z/)
   end
+
+  it 'groups multiple rows with the same invoice_no into one invoice' do
+    csv = <<~CSV
+      invoice_date,invoice_no,buyer_name,buyer_ntn,buyer_province,buyer_address,description,hs_code,quantity,uom,unit_price
+      2026-06-24,92,ALI ENTERPRISES,3372090-8,Punjab,"Main Barki Road, Bahowala, Lahore",21x17x13Box,4819.1000,637,Numbers pieces units,390
+      2026-06-24,92,ALI ENTERPRISES,3372090-8,Punjab,"Main Barki Road, Bahowala, Lahore",18.5x12x12Box,4819.1000,650,Numbers pieces units,253
+    CSV
+
+    results = import_csv(csv)
+    expect(results.size).to eq(1)
+    expect(results.first.success).to be true
+
+    invoice = results.first.invoice
+    expect(invoice.pdf_invoice_number).to eq('92')
+    expect(invoice.items.count).to eq(2)
+    expect(invoice.items.map { |i| [i.quantity.to_f, i.unit_price.to_f] }).to eq([[637.0, 390.0], [650.0, 253.0]])
+    expect(invoice.tax_amount).to eq(74_318.4)
+    expect(invoice.total_amount).to eq(487_198.4)
+  end
 end
