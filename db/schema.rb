@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_07_190000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_18_160129) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -161,7 +161,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_07_190000) do
     t.string "sro_schedule_no"
     t.decimal "tax_rate", precision: 5, scale: 2
     t.decimal "total_value", precision: 15, scale: 2
-    t.decimal "unit_price", precision: 15, scale: 2
+    t.decimal "unit_price", precision: 20, scale: 8
     t.string "uom"
     t.datetime "updated_at", null: false
     t.index ["invoice_id"], name: "index_invoice_items_on_invoice_id"

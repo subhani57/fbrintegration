@@ -12,11 +12,11 @@ module Admin
     end
 
     def show
-      @subscription_payments = @taxpayer.subscription_payments.includes(:recorded_by, :line_items).recent.limit(20)
+      @subscription_payments = @taxpayer.subscription_payments.includes(:line_items).recent.limit(20)
     end
 
     def receipt
-      payment = SubscriptionPayment.includes(:user, :recorded_by, :line_items).find(params[:payment_id])
+      payment = SubscriptionPayment.includes(:user, :line_items).find(params[:payment_id])
       generator = Subscriptions::ReceiptGenerator.new(payment)
       send_data generator.to_pdf,
                 filename: generator.filename,

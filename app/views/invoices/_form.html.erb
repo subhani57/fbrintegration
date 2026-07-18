@@ -281,11 +281,11 @@
           </div>
           <div class="col-md-3">
             <label class="form-label">Unit price (Rs.) <span class="text-danger">*</span></label>
-            <input type="number" name="invoice[items_attributes][INDEX][unit_price]" class="form-control item-unit-price" step="0.01" min="0" required placeholder="0.00">
+            <input type="number" name="invoice[items_attributes][INDEX][unit_price]" class="form-control item-unit-price" step="any" min="0" required placeholder="0.00">
           </div>
           <div class="col-md-3">
             <label class="form-label">Line total (excl. tax)</label>
-            <input type="number" name="invoice[items_attributes][INDEX][total_value]" class="form-control item-total-price bg-light" step="0.01" readonly>
+            <input type="number" name="invoice[items_attributes][INDEX][total_value]" class="form-control item-total-price" step="0.01" min="0" placeholder="0.00">
           </div>
         </div>
       </div>
@@ -298,7 +298,7 @@
           </div>
           <div class="col-md-3">
             <label class="form-label">Sales tax (Rs.)</label>
-            <input type="number" name="invoice[items_attributes][INDEX][sales_tax]" class="form-control item-tax-amount bg-light" step="0.01" readonly>
+            <input type="number" name="invoice[items_attributes][INDEX][sales_tax]" class="form-control item-tax-amount" step="0.01" min="0" placeholder="0.00">
           </div>
           <div class="col-md-6">
             <label class="form-label">Sale type</label>

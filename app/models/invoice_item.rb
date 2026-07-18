@@ -41,8 +41,9 @@ class InvoiceItem < ApplicationRecord
     return if quantity.blank? || unit_price.blank?
 
     self.tax_rate = DEFAULT_TAX_RATE if tax_rate.blank?
-    self.total_value = (quantity.to_f * unit_price.to_f).round(2)
-    self.sales_tax = (total_value * (tax_rate.to_f / 100)).round(2)
+    # Preserve manually entered line total / sales tax when present.
+    self.total_value = (quantity.to_f * unit_price.to_f).round(2) if total_value.blank?
+    self.sales_tax = (total_value.to_f * (tax_rate.to_f / 100)).round(2) if sales_tax.blank?
   end
 end
 

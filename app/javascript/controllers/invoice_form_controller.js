@@ -51,8 +51,14 @@ export default class extends Controller {
   }
 
   handleInput(event) {
-    if (event.target.matches(".item-quantity, .item-unit-price, .item-tax-rate")) {
-      this.calculateItemTotal(event.target.closest(".invoice-item"))
+    const item = event.target.closest(".invoice-item")
+    if (event.target.matches(".item-quantity, .item-unit-price")) {
+      this.calculateItemTotal(item)
+      this.calculateTotals()
+    } else if (event.target.matches(".item-tax-rate")) {
+      this.calculateItemTax(item)
+      this.calculateTotals()
+    } else if (event.target.matches(".item-total-price, .item-tax-amount")) {
       this.calculateTotals()
     }
   }
@@ -261,11 +267,16 @@ export default class extends Controller {
     if (!item) return
     const quantity = parseFloat(item.querySelector(".item-quantity")?.value) || 0
     const unitPrice = parseFloat(item.querySelector(".item-unit-price")?.value) || 0
-    const taxRate = parseFloat(item.querySelector(".item-tax-rate")?.value) || 0
     const totalPrice = quantity * unitPrice
-    const taxAmount = totalPrice * (taxRate / 100)
     item.querySelector(".item-total-price").value = totalPrice.toFixed(2)
-    item.querySelector(".item-tax-amount").value = taxAmount.toFixed(2)
+    this.calculateItemTax(item)
+  }
+
+  calculateItemTax(item) {
+    if (!item) return
+    const taxRate = parseFloat(item.querySelector(".item-tax-rate")?.value) || 0
+    const totalPrice = parseFloat(item.querySelector(".item-total-price")?.value) || 0
+    item.querySelector(".item-tax-amount").value = (totalPrice * (taxRate / 100)).toFixed(2)
   }
 
   calculateTotals() {

@@ -50,12 +50,12 @@
         </div>
         <div class="col-md-3">
           <%= f.input :unit_price, label: 'Unit price (Rs.)',
-              input_html: { class: 'form-control item-unit-price', type: 'number', step: '0.01', min: '0', required: true, placeholder: '0.00' },
+              input_html: { class: 'form-control item-unit-price', type: 'number', step: 'any', min: '0', required: true, placeholder: '0.00' },
               wrapper_html: { class: 'mb-0' } %>
         </div>
         <div class="col-md-3">
           <%= f.input :total_value, label: 'Line total (excl. tax)',
-              input_html: { class: 'form-control item-total-price bg-light', type: 'number', step: '0.01', readonly: true },
+              input_html: { class: 'form-control item-total-price', type: 'number', step: '0.01', min: '0', placeholder: '0.00' },
               wrapper_html: { class: 'mb-0' } %>
         </div>
       </div>
@@ -71,7 +71,7 @@
         </div>
         <div class="col-md-3">
           <%= f.input :sales_tax, label: 'Sales tax (Rs.)',
-              input_html: { class: 'form-control item-tax-amount bg-light', type: 'number', step: '0.01', readonly: true },
+              input_html: { class: 'form-control item-tax-amount', type: 'number', step: '0.01', min: '0', placeholder: '0.00' },
               wrapper_html: { class: 'mb-0' } %>
         </div>
         <div class="col-md-6">

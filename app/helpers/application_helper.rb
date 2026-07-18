@@ -29,11 +29,21 @@ module ApplicationHelper
     end
   end
 
-  def format_pkr(amount)
+  def format_pkr(amount, precision: 2)
     return 'Rs. 0.00' if amount.nil?
 
-    value = number_with_precision(amount.to_f, precision: 2, delimiter: ',')
+    value = number_with_precision(amount.to_f, precision: precision, delimiter: ',')
     "Rs. #{value}"
+  end
+
+  # Unit price may use up to 8 decimal places; trim trailing zeros, keep at least 2.
+  def format_unit_price(amount)
+    return 'Rs. 0.00' if amount.nil?
+
+    int_part, frac_part = format('%.8f', amount.to_f).split('.', 2)
+    frac_part = frac_part.to_s.sub(/0+\z/, '')
+    frac_part = frac_part.ljust(2, '0')
+    "Rs. #{number_with_delimiter(int_part)}.#{frac_part}"
   end
 
   def invoice_fbr_submitted?(invoice)

@@ -278,7 +278,7 @@
                     <td><%= item.description %></td>
                     <td><code class="small"><%= item.hs_code %></code></td>
                     <td class="text-end"><%= item.quantity %> <%= item.uom %></td>
-                    <td class="text-end"><%= format_pkr(item.unit_price) %></td>
+                    <td class="text-end"><%= format_unit_price(item.unit_price) %></td>
                     <td class="text-end"><%= item.tax_rate %>%</td>
                     <td class="text-end fw-semibold"><%= format_pkr(item.total_value || (item.quantity.to_f * item.unit_price.to_f)) %></td>
                   </tr>
